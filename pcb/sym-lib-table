@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name gtrzps)(type Legacy)(uri ${KIPRJMOD}/gtrzps.lib)(options "")(descr ""))
+)
