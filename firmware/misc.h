@@ -1,0 +1,12 @@
+ enum States {
+  WIFI_CONNECTION,
+  WAIT_FOR_KEY,
+  CONNECTING_TO_SERVER,
+  WAIT_FOR_LOCK
+};
+
+enum ErrorCodes {
+  ACCESS_DENIED,
+  ACCESS_GRANTED,
+  NO_RESPONSE
+};
