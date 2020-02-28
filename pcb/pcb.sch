@@ -1,5 +1,4 @@
 EESchema Schematic File Version 4
-LIBS:pcb-cache
 EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
@@ -15,25 +14,14 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L RF_Module:ESP-12E U2
-U 1 1 5E0795D7
-P 4650 2850
-F 0 "U2" H 5050 3700 50  0000 C CNN
-F 1 "ESP-12E" H 5000 3600 50  0000 C CNN
-F 2 "RF_Module:ESP-12E" H 4650 2850 50  0001 C CNN
-F 3 "http://wiki.ai-thinker.com/_media/esp8266/esp8266_series_modules_user_manual_v1.1.pdf" H 4300 2950 50  0001 C CNN
-	1    4650 2850
-	1    0    0    -1  
-$EndComp
-$Comp
 L Device:Buzzer BZ1
 U 1 1 5E079D5E
-P 3250 3250
-F 0 "BZ1" H 3402 3279 50  0000 L CNN
-F 1 "Buzzer" H 3402 3188 50  0000 L CNN
-F 2 "Buzzer_Beeper:Buzzer_12x9.5RM7.6" V 3225 3350 50  0001 C CNN
-F 3 "~" V 3225 3350 50  0001 C CNN
-	1    3250 3250
+P 2300 2800
+F 0 "BZ1" H 2452 2829 50  0000 L CNN
+F 1 "Buzzer" H 2452 2738 50  0000 L CNN
+F 2 "Buzzer_Beeper:Buzzer_12x9.5RM7.6" V 2275 2900 50  0001 C CNN
+F 3 "~" V 2275 2900 50  0001 C CNN
+	1    2300 2800
 	-1   0    0    -1  
 $EndComp
 $Comp
@@ -90,17 +78,6 @@ F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 8638 2150 50  
 F 3 "~" H 8600 2300 50  0001 C CNN
 	1    8600 2300
 	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R1
-U 1 1 5E082D11
-P 3500 3150
-F 0 "R1" V 3600 3150 50  0000 C CNN
-F 1 "400" V 3700 3150 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 3430 3150 50  0001 C CNN
-F 3 "~" H 3500 3150 50  0001 C CNN
-	1    3500 3150
-	0    -1   -1   0   
 $EndComp
 $Comp
 L Device:R R5
@@ -473,17 +450,6 @@ Wire Wire Line
 	5700 3750 5800 3750
 Wire Wire Line
 	3650 3150 4050 3150
-$Comp
-L power:GND #PWR0111
-U 1 1 5E0D71B2
-P 3350 3350
-F 0 "#PWR0111" H 3350 3100 50  0001 C CNN
-F 1 "GND" V 3200 3300 50  0000 R CNN
-F 2 "" H 3350 3350 50  0001 C CNN
-F 3 "" H 3350 3350 50  0001 C CNN
-	1    3350 3350
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	9050 2150 8900 2150
 Wire Wire Line
@@ -630,7 +596,6 @@ NoConn ~ 4050 2850
 NoConn ~ 4050 2950
 NoConn ~ 4050 3050
 NoConn ~ 5250 3050
-NoConn ~ 5250 3150
 NoConn ~ 5250 3250
 NoConn ~ 5250 2450
 NoConn ~ 4050 3250
@@ -749,4 +714,91 @@ F 3 "" H 1350 5550 50  0001 C CNN
 	1    1350 5550
 	1    0    0    -1  
 $EndComp
+$Comp
+L Device:R R?
+U 1 1 5E595A14
+P 5350 3600
+F 0 "R?" H 5200 3650 50  0000 L CNN
+F 1 "10k" H 5150 3550 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 5280 3600 50  0001 C CNN
+F 3 "~" H 5350 3600 50  0001 C CNN
+	1    5350 3600
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 5E5962D0
+P 5350 3750
+F 0 "#PWR?" H 5350 3500 50  0001 C CNN
+F 1 "GND" H 5355 3577 50  0000 C CNN
+F 2 "" H 5350 3750 50  0001 C CNN
+F 3 "" H 5350 3750 50  0001 C CNN
+	1    5350 3750
+	1    0    0    -1  
+$EndComp
+$Comp
+L RF_Module:ESP-12E U2
+U 1 1 5E0795D7
+P 4650 2850
+F 0 "U2" H 5050 3700 50  0000 C CNN
+F 1 "ESP-12E" H 5000 3600 50  0000 C CNN
+F 2 "RF_Module:ESP-12E" H 4650 2850 50  0001 C CNN
+F 3 "http://wiki.ai-thinker.com/_media/esp8266/esp8266_series_modules_user_manual_v1.1.pdf" H 4300 2950 50  0001 C CNN
+	1    4650 2850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5250 3150 5350 3150
+Wire Wire Line
+	5350 3150 5350 3450
+$Comp
+L Transistor_FET:2N7002 Q?
+U 1 1 5E5A010E
+P 3450 3150
+F 0 "Q?" H 3654 3196 50  0000 L CNN
+F 1 "2N7002" H 3654 3105 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 3650 3075 50  0001 L CIN
+F 3 "https://www.fairchildsemi.com/datasheets/2N/2N7002.pdf" H 3450 3150 50  0001 L CNN
+	1    3450 3150
+	-1   0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 5E5B353E
+P 2400 2700
+F 0 "#PWR?" H 2400 2550 50  0001 C CNN
+F 1 "+3V3" H 2415 2873 50  0000 C CNN
+F 2 "" H 2400 2700 50  0001 C CNN
+F 3 "" H 2400 2700 50  0001 C CNN
+	1    2400 2700
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 5E5B7132
+P 3350 3350
+F 0 "#PWR?" H 3350 3100 50  0001 C CNN
+F 1 "GND" H 3355 3177 50  0000 C CNN
+F 2 "" H 3350 3350 50  0001 C CNN
+F 3 "" H 3350 3350 50  0001 C CNN
+	1    3350 3350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_DIP_x01 SW?
+U 1 1 5E5B7925
+P 2900 2900
+F 0 "SW?" H 2900 3167 50  0000 C CNN
+F 1 "SW_DIP_x01" H 2900 3076 50  0000 C CNN
+F 2 "" H 2900 2900 50  0001 C CNN
+F 3 "~" H 2900 2900 50  0001 C CNN
+	1    2900 2900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3200 2900 3350 2900
+Wire Wire Line
+	3350 2900 3350 2950
+Wire Wire Line
+	2400 2900 2600 2900
 $EndSCHEMATC
