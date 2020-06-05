@@ -28,6 +28,7 @@ while True:
     # Wait for a connection
     print('waiting for a connection')
     connection, client_address = sock.accept()
+    connection.timeout(10)
     try:
         print('connection from', client_address)
 

@@ -7,11 +7,12 @@
 
 //#define HW_TEST
 
-#define STASSID "your-ssid"
-#define STAPSK  "your-wifi-password"
+#define STASSID "Gorkogo164"
+#define STAPSK  "1122334455s"
 
 #define HOSTNAME "TestReader"
-#define HOST "192.168.1.123" // IP of your server
+#define HOST "10.0.0.12"
+
 
 #define PORT 9999
 
