@@ -1,17 +1,21 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <ArduinoJson.h>
 #include "rdm6300.h"
 #include "settings.h"
 #include "misc.h"
 
 int rx_mux_pin = 12;
 int relay_pin = 13;
-int led_blue_pin = 5;
-int led_red_pin = 4;
-int buzzer_pin = 10;
+int led_blue_pin = 4;
+int led_red_pin = 5;
+int buzzer_pin = 2;
+
+unsigned long heartbeat_last_time = millis();
 
 Rdm6300 rdm6300;
 WiFiClient client;
+DynamicJsonDocument packet(1024);
 
 const char* host = HOST;
 const uint16_t port = PORT;
@@ -23,10 +27,41 @@ void setup()
   pinMode(buzzer_pin, OUTPUT);
   pinMode(rx_mux_pin, OUTPUT);
   pinMode(relay_pin, OUTPUT);
+  digitalWrite(buzzer_pin, LOW);
+  digitalWrite(led_red_pin, HIGH);
   // Mux UART RX to RDM6300 
   digitalWrite(rx_mux_pin, HIGH);
   Serial.begin(9600);
   rdm6300.begin(&Serial);
+  Serial.println("Start initialization");
+}
+
+void denyBeep()
+{
+  digitalWrite(buzzer_pin, HIGH);
+  delay(50);
+  digitalWrite(buzzer_pin, LOW);
+  delay(100);
+  digitalWrite(buzzer_pin, HIGH);
+  delay(50);
+  digitalWrite(buzzer_pin, LOW);
+}
+
+void allowBeep()
+{
+  digitalWrite(buzzer_pin, HIGH);
+  delay(50);
+  digitalWrite(buzzer_pin, LOW);
+}
+
+void userNotFoundBeep()
+{
+  for (int i = 0; i < 3; i++)
+  {
+    digitalWrite(buzzer_pin, HIGH);
+    delay(50);
+    digitalWrite(buzzer_pin, LOW);
+  }
 }
 
 void wifiConnect()
@@ -64,7 +99,7 @@ void connectToServer()
     Serial.println("connection failed, try again");
     delay(1000);
   }
-  client.keepAlive(100, 10, 6);
+  //client.keepAlive(100, 10, 6);
   Serial.println("Connection successful!");
 }
 
@@ -82,20 +117,73 @@ String hashTag(uint32_t tag)
   return String(buf);
 }
 
-bool checkAccess(uint32_t tagId)
+int checkAccess(uint32_t tagId)
 {
   String requestPrefix = "TAG:";
   String hashedTagValue = hashTag(tagId);
-  client.println(requestPrefix + hashedTagValue);
+  StaticJsonDocument<200> doc;
+  //client.println(requestPrefix + hashedTagValue);
+  packet["type"] = "request";
+  packet["operation"] = "unlock";
+  packet["id"] = MACHINE_NAME;
+  packet["key"] = hashedTagValue;
+  Serial.print(F("Sending request..."));
+  serializeJson(packet, client);
+  client.write("\r\n");
   Serial.println(">>>> Request sent, hashed value is: " + hashedTagValue);
   String answer = client.readStringUntil('\n');
   Serial.println(">>>> Received from server: " + answer);
-  if (answer.equals("ACCESS"))
+  DeserializationError error = deserializeJson(doc, answer);
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.c_str());
+    return UNKNOWN_ERROR;
+  }
+  if (doc["result"] == "grant")
     return ACCESS_GRANTED;
-  else if (answer.equals("ACCESS"))
+  else if (doc["result"] == "deny")
     return ACCESS_DENIED;
+  else if (doc["result"] == "norecord")
+    return USER_NOT_FOUND;
 }
 
+int logoutUser(uint32_t tagId)
+{
+  String requestPrefix = "TAG:";
+  String hashedTagValue = hashTag(tagId);
+  StaticJsonDocument<200> doc;
+  //client.println(requestPrefix + hashedTagValue);
+  packet["type"] = "request";
+  packet["operation"] = "lock";
+  packet["id"] = MACHINE_NAME;
+  packet["key"] = hashedTagValue;
+  Serial.print(F("Sending request..."));
+  serializeJson(packet, client);
+  client.write("\r\n");
+  Serial.println(">>>> Request sent, hashed value is: " + hashedTagValue);
+  String answer = client.readStringUntil('\n');
+  Serial.println(">>>> Received from server: " + answer);
+  DeserializationError error = deserializeJson(doc, answer);
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.c_str());
+    return UNKNOWN_ERROR;
+  }
+  if (doc["result"] == "confirmed")
+    return LOGOUT_CONFIRMED;
+}
+
+void sendHeartbeat()
+{
+  StaticJsonDocument<200> doc;
+  //client.println(requestPrefix + hashedTagValue);
+  packet["type"] = "heartbeat";
+  packet["id"] = MACHINE_NAME;
+  Serial.print(F("Sending heartbeat..."));
+  serializeJson(packet, client);
+  client.write("\r\n");
+  heartbeat_last_time = millis();
+}
 void unlockReader()
 {
   digitalWrite(relay_pin,HIGH);
@@ -110,6 +198,8 @@ void lockReader()
   digitalWrite(led_red_pin, HIGH);
 }
 int state = WIFI_CONNECTION;
+int previousState = WIFI_CONNECTION;
+bool isUnlocked = false;
 
 #ifdef HW_TEST
 void loop()
@@ -148,32 +238,58 @@ void loop()
       int requestResult = checkAccess(tag);
       if (requestResult == ACCESS_GRANTED) {
         Serial.println("Access granted by server!");
+        allowBeep();
         unlockReader();
+        isUnlocked = true;
         state = WAIT_FOR_LOCK;
+        Serial.print("State changed to wait for lock ");
       } else if (requestResult == ACCESS_DENIED){
         Serial.println("Access denied by server!");
+        denyBeep();
+      } else if (requestResult == USER_NOT_FOUND) {
+        // process user not found case
+        userNotFoundBeep();
       }
     }
     // Check connection
     if (!client.connected()) {
-      client.println("Connection with server lost, try to reconnect");
-      state = CONNECTING_TO_SERVER; 
+      Serial.print("Connection with server lost, try to reconnect");
+      state = CONNECTING_TO_SERVER;
+    } else if ((millis() - heartbeat_last_time) > HEARTBEAT_INTERVAL) {
+      sendHeartbeat();
     }
     break;
   case WAIT_FOR_LOCK:
+  //Serial.print("Wait for lock request");
     if (rdm6300.update()) {
       uint32_t tag = rdm6300.get_tag_id();
-      Serial.print("LOGOUT tag received: ");
-      Serial.println(tag, HEX);
-      client.println("LOGOUT");
-      lockReader();
-      state = WAIT_FOR_KEY;
+      Serial.print("LOGOUT request");
+      int requestResult = logoutUser(tag);
+      if (requestResult == LOGOUT_CONFIRMED)
+      {
+        client.println("LOGOUT OK");
+        lockReader();
+        allowBeep();
+        isUnlocked = false;
+        state = WAIT_FOR_KEY;
+      }   
+    }
+    // Check connection
+    if (!client.connected()) {
+      Serial.print("Connection with server lost, try to reconnect");
+      state = CONNECTING_TO_SERVER;
+    } else if ((millis() - heartbeat_last_time) > HEARTBEAT_INTERVAL) {
+      sendHeartbeat();
     }
     break;
   case CONNECTING_TO_SERVER:
     if (WiFi.status() == WL_CONNECTED) {
       connectToServer();
-      state = WAIT_FOR_KEY;
+      if (isUnlocked)
+        state = WAIT_FOR_LOCK;
+      else
+        state = WAIT_FOR_KEY;
+      
     } else {
       Serial.println("No WIFI connection, try to reconnect");
       state = WIFI_CONNECTION;

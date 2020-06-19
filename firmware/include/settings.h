@@ -7,13 +7,16 @@
 
 //#define HW_TEST
 
-#define STASSID "Gorkogo164"
-#define STAPSK  "1122334455s"
+
+#define STASSID "HackLab"
+#define STAPSK  "derparol"
 
 #define HOSTNAME "TestReader"
-#define HOST "10.0.0.12"
+#define HOST "192.168.1.115"
 
-
+#define MACHINE_NAME "mill"
 #define PORT 9999
+
+#define HEARTBEAT_INTERVAL 100000 // milliseconds
 
 #endif /* _SETTINGS_h_ */
