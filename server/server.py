@@ -15,10 +15,15 @@ import yaml
 from yaml import Loader
 import datetime
 
-logging.basicConfig(level=logging.DEBUG)
 CONFIG_FILE = 'config.cfg'
 cfg = yaml.load(open(CONFIG_FILE, 'r'), Loader=Loader)
 
+logging.basicConfig(filename='log.txt', level=logging.DEBUG)
+
+def get_usage_file():
+    dt = datetime.datetime.now()
+    f = cfg['logging']['usage-file'] + '-%s-%s.txt' % (dt.year, dt.month)
+    return f
 
 def check_user(key, toolname):
     logging.debug("Get user for key: %s" % key)
@@ -40,7 +45,8 @@ def check_user(key, toolname):
     
     if result:
         logging.info("Access granted for %s" % result[1])
-        with open(cfg['logging']['usage-file'], 'a') as toolfile:
+        dt = datetime.datetime.now()
+        with open(get_usage_file(), 'a') as toolfile:
             toolfile.write(json.dumps({'timestamp': datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"), 
                                        'user': result[1],
                                        'tool': toolname,
@@ -50,7 +56,7 @@ def check_user(key, toolname):
         response = json.dumps({'type': 'response', 'result': 'grant'}).encode('utf-8') + b'\r\n'
     else:
         logging.info("Access denied")
-        with open(cfg['logging']['usage-file'], 'a') as toolfile:
+        with open(get_usage_file(), 'a') as toolfile:
             toolfile.write(json.dumps({'timestamp': datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"), 
                                        'user': '-',
                                        'tool': toolname,
@@ -78,7 +84,7 @@ async def handle_request(reader, writer):
         logging.debug("Sending response: %s" % response)
         writer.write(response)
         logging.info("Logout")
-        with open(cfg['logging']['usage-file'], 'a') as toolfile:
+        with open(get_usage_file(), 'a') as toolfile:
             toolfile.write(json.dumps({'timestamp': datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"), 
                                        'user': '-',
                                        'tool': packet['id'],
