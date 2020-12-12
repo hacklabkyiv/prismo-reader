@@ -14,11 +14,14 @@ from psycopg2.extensions import AsIs
 import yaml
 from yaml import Loader
 import datetime
+from slack_notify import slack_notify
 
 CONFIG_FILE = 'config.cfg'
 cfg = yaml.load(open(CONFIG_FILE, 'r'), Loader=Loader)
 
 logging.basicConfig(filename='log.txt', level=logging.DEBUG)
+
+
 
 def get_usage_file():
     dt = datetime.datetime.now()
@@ -43,7 +46,7 @@ def check_user(key, toolname):
     
     response = ''
     
-    if result:
+    if result[0]:
         logging.info("Access granted for %s" % result[1])
         dt = datetime.datetime.now()
         with open(get_usage_file(), 'a') as toolfile:
@@ -51,9 +54,10 @@ def check_user(key, toolname):
                                        'user': result[1],
                                        'tool': toolname,
                                        'result': 'granted',
-                                        }, indent=2))
-            toolfile.write(',\r\n')
+                                        }))
+            toolfile.write('\r\n')
         response = json.dumps({'type': 'response', 'result': 'grant'}).encode('utf-8') + b'\r\n'
+        slack_notify(result[1], toolname, get_usage_file())
     else:
         logging.info("Access denied")
         with open(get_usage_file(), 'a') as toolfile:
@@ -61,8 +65,8 @@ def check_user(key, toolname):
                                        'user': '-',
                                        'tool': toolname,
                                        'result': 'denied',
-                                        }, indent=2))
-            toolfile.write(',\r\n')
+                                        }))
+            toolfile.write('\r\n')
         response = json.dumps({'type': 'response', 'result': 'deny'}).encode('utf-8') + b'\r\n'
     return response
 
@@ -89,8 +93,8 @@ async def handle_request(reader, writer):
                                        'user': '-',
                                        'tool': packet['id'],
                                        'result': 'logout',
-                                        }, indent=2))
-            toolfile.write(',\r\n')
+                                        }))
+            toolfile.write('\r\n')
         await writer.drain()
     logging.debug("Close the client socket")
     writer.close()
