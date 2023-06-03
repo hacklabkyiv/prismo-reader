@@ -14,6 +14,7 @@ from psycopg2.extensions import AsIs
 import yaml
 from yaml import Loader
 import datetime
+import time
 from slack_notify import slack_notify
 
 CONFIG_FILE = 'config.cfg'
@@ -38,6 +39,12 @@ def check_user(key, toolname):
     c = conn.cursor()
     c.execute("SELECT %s, name  FROM users WHERE key=%s", (AsIs(toolname), key))
     result = c.fetchone()
+
+    try:
+        write_logs_into_database(key, toolname)
+    except Exception as e:
+        logging.error('Error at %s', 'division', exc_info=e)
+
     conn.close()
     logging.debug("Database query ok, result: %s" % (result, ))
     
@@ -70,11 +77,29 @@ def check_user(key, toolname):
         response = json.dumps({'type': 'response', 'result': 'deny'}).encode('utf-8') + b'\r\n'
     return response
 
+
+def write_logs_into_database(key, toolname):
+    logging.debug("Write logs into database userId : %s" % key)
+    logging.debug("Writing logs into toolsName:  %s" % toolname)
+    write_connection = psycopg.connect(user=cfg['db-config']['user'],
+                                       password=cfg['db-config']['password'],
+                                       host=cfg['db-config']['server'],
+                                       port=cfg['db-config']['port'],
+                                       database='visitors')
+
+    write_cursor = write_connection.cursor()
+    write_cursor.execute("INSERT INTO logs (device_name, time, key) values (%s, %s, %s)",
+                         (toolname, time.time(), key))
+    write_connection.commit()
+
+    logging.debug("End write")
+
+
 async def handle_request(reader, writer):
     data = await reader.readline()
     message = data.decode()
     addr = writer.get_extra_info('peername')
-    logging.debug("Received %r from %r" % (message, addr)) 
+    logging.debug("Received %r from %r" % (message, addr))
     packet = json.loads(data)
     if packet['type'] == 'request' and packet['operation'] == "unlock":
         logging.info("UNLOCK REQUEST")
