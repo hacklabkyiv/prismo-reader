@@ -1,0 +1,3 @@
+[submodule "hw/HackLab-reader"]
+	path = hw/HackLab-reader
+	url = git@github.com:Sashkoiv/HackLab-reader.git
