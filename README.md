@@ -1,4 +1,7 @@
 # PRISMO readers
+# (OUTDATED)
+
+[Protocol description](./doc/protocol.md)
 ### Flashing instructions
 
 Connect your reader to your USB-UART converter:
