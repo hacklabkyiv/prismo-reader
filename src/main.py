@@ -18,10 +18,17 @@ import hashlib
 import PN532 as nfc
 import config
 
-# Visuals
-buzzer = Pin(0, Pin.OUT, value=1)
+# STATUS = !OPERATION
+# For the cold start the status is locked and the operation request is to unlock
+LOCK = "lock"
+UNLOCK = "unlock"
+OPERATION = UNLOCK
+
+# Pins
+buzzer = Pin(17, Pin.OUT, value=1)
 relay = Pin(4, Pin.OUT, value=1)
 led = Pin(16, Pin.OUT)
+GWIOT_RX = Pin(21)      # GWIOT_7941E_RX_PIN 21
 
 # Timers for auto periodic processes
 heartbeatTimer = Timer(0)
@@ -113,30 +120,35 @@ def ledIndication(color: str, led_qty: int=config.LED_QTY) -> None:
         print(config.COLORS.keys())
 
 
-def grantAccess() -> None:
+def unlock() -> None:
     """
     Grant access routine
     """
+    global OPERATION, LOCK
+    OPERATION = LOCK
+
     relay.value(0)
     ledIndication('green')
     beep(2, False)
 
 
-def denyAccess() -> None:
+def lock() -> None:
     """
     Deny access routing
     """
+    global OPERATION, UNLOCK
+    OPERATION = UNLOCK
+
     relay.value(1)
     ledIndication('red')
     beep(1, True)
 
 
-def userNotFound() -> None:
+def denied() -> None:
     """
-    User not found. Indicate the issue and deny access.
+    Operationn denied. Indicate the issue.
     Sounds as X in Morse
     """
-    relay.value(1)
     ledIndication('indigo')
     beep(1, True)
     beep(2, False)
@@ -185,12 +197,18 @@ def resolveAccess(key: bytes) -> None:
     Depending on access rights of the key owner performs an action -
     either to grant access to the accessory or deny access.
     Args:
-        key (bytes): the value from the tag
+        key (bytes):        the value from the tag
     """
+    global OPERATION, LOCK, UNLOCK
     print('Sending request...')
     hashResult = str(hashTag(key))
 
-    req = {"type":"request","id":config.MACHINE_NAME,"key":hashResult}
+    if OPERATION == UNLOCK:
+        print('to be unlocked')
+    elif OPERATION == LOCK:
+        print('to be locked')
+
+    req = {"type":"request","operation":OPERATION,"id":config.MACHINE_NAME,"key":hashResult}
     request = json.dumps(req) + "\r\n"
     print("The access request is:\n", request)
 
@@ -202,17 +220,18 @@ def resolveAccess(key: bytes) -> None:
         except:
             result = ''
 
-    if "grant" in data:
-        grantAccess()
+    if OPERATION == UNLOCK and ("grant" in data):   # UNLOCK grant
+        unlock()
         print("Access granted")
-    elif "deny" in data:
-        denyAccess()
+    elif OPERATION == UNLOCK and ("deny" in data):  # UNLOCK deny
+        denied()
         print("Access denied")
-    elif "usernotfound" in data:
-        userNotFound()
-        print("User not found")
+    elif OPERATION == LOCK and ("confirmed" in data): # LOCK confirm
+        lock()
+        print("Access granted")
     else:
         print("Response is neither approve nor rejects the access.")
+        print("Doing nothing")
 
 
 def sendHeartbeat(_) -> None:

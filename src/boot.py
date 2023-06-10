@@ -13,6 +13,8 @@ from config import STASSID, STAPSK
 wlan = network.WLAN(network.STA_IF) # create station interface
 wlan.active(True)       # activate the interface
 
+print('WLAN network to connect is: ', STASSID)
+
 if not wlan.isconnected():
     print('connecting to network...')
     wlan.connect(STASSID, STAPSK) # connect to an AP
