@@ -10,8 +10,8 @@ STASSID = "HackLab"
 STAPSK = "derparol"
 
 HOSTNAME = "TestingDevice"
-# HOST = "192.168.1.115"
-HOST = "192.168.88.220"
+HOST = "192.168.1.115"
+# HOST = "192.168.88.220"
 PORT = "9999"
 MACHINE_NAME = "bigcnc"
 

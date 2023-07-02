@@ -25,10 +25,10 @@ UNLOCK = "unlock"
 OPERATION = UNLOCK
 
 # Pins
-buzzer = Pin(17, Pin.OUT, value=1)
-relay = Pin(4, Pin.OUT, value=1)
-led = Pin(16, Pin.OUT)
-GWIOT_RX = Pin(21)      # GWIOT_7941E_RX_PIN 21
+buzzer = Pin(19, Pin.OUT, value=0)
+relay = Pin(18, Pin.OUT, value=0)
+led = Pin(4, Pin.OUT)
+# GWIOT_RX = Pin(21)      # GWIOT_7941E_RX_PIN 21
 
 # Timers for auto periodic processes
 heartbeatTimer = Timer(0)
@@ -95,9 +95,9 @@ def beep(qty: int=1, long: bool=False) -> None:
         time_delay = 500
 
     for i in range(qty):
-        buzzer.value(0)
-        sleep_ms(time_delay)
         buzzer.value(1)
+        sleep_ms(time_delay)
+        buzzer.value(0)
         if i != qty:
             sleep_ms(time_delay)
 
