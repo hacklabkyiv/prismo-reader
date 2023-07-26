@@ -35,6 +35,7 @@ heartbeatTimer = Timer(0)
 
 # SPI
 spi_dev = SPI(1, baudrate=1000000)
+irq_pin = Pin(25, Pin.IN)
 cs = Pin(2, Pin.OUT)
 cs.on()
 
@@ -47,7 +48,7 @@ print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
 pn532.SAM_configuration()
 
 
-def read_nfc(dev: PN532, tmot: int=500) -> bytearray:
+def read_nfc(dev: PN532, tmot: int=5000) -> bytearray:
     """
     Reads the tag and returns the code of the tag.
     Args:
@@ -67,6 +68,14 @@ def read_nfc(dev: PN532, tmot: int=500) -> bytearray:
         print('Found card with UID:', [hex(i) for i in uid])
         return uid
 
+
+def read(_) -> None:
+        key = read_nfc(pn532)
+        if key is not None:
+            resolveAccess(key)
+        sleep(1)
+
+irq_pin.irq(read)
 
 def hashTag(raw_data: bytearray) -> bytes:
     """
@@ -252,12 +261,4 @@ heartbeatTimer.init(period=config.HEARTBEAT_INTERVAL,
                     mode=Timer.PERIODIC,
                     callback=sendHeartbeat)
 
-
-while True:
-    key = read_nfc(pn532, 500)
-    if key is not None:
-        resolveAccess(key)
-    # Try to read the tag every one second
-    # TODO: switch to timers instead
-    # TODO: consider sleep mode while waiting for one sec
-    sleep(1)
+read(1) # First initial try to read before the interrupt can start working normally
