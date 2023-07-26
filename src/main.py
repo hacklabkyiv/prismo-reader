@@ -9,7 +9,6 @@ __credits__ = ["artsin, sashkoiv, paulftw, lazer_ninja, Vova Stelmashchuk"]
 
 from machine import Pin, SPI, Timer
 from time import sleep, sleep_ms
-from neopixel import NeoPixel
 
 import json
 import socket
@@ -27,7 +26,6 @@ OPERATION = UNLOCK
 # Pins
 buzzer = Pin(19, Pin.OUT, value=0)
 relay = Pin(18, Pin.OUT, value=0)
-led = Pin(4, Pin.OUT)
 # GWIOT_RX = Pin(21)      # GWIOT_7941E_RX_PIN 21
 
 # Timers for auto periodic processes
@@ -119,10 +117,8 @@ def ledIndication(color: str, led_qty: int=config.LED_QTY) -> None:
         led_qty (int):  quantity of WS2812 diodes in string
     """
     if color in config.COLORS.keys():
-        l = NeoPixel(led, led_qty)
         color_code = config.COLORS.get(color)
-        for i in range(config.LED_QTY):
-            l[i] = color_code
+        l.fill(color_code)
         l.write()
     else:
         print("Unsupported color for indication, please select from the list:")
@@ -143,7 +139,7 @@ def unlock() -> None:
 
 def lock() -> None:
     """
-    Deny access routing
+    Deny access routine
     """
     global OPERATION, UNLOCK
     OPERATION = UNLOCK
