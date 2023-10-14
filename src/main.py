@@ -13,6 +13,7 @@ from time import sleep, sleep_ms
 import json
 import socket
 import hashlib
+import ubinascii
 
 import PN532 as nfc
 import config
@@ -85,7 +86,8 @@ def hashTag(raw_data: bytearray) -> bytes:
     """
     bytes_data = ''.join(hex(i)[2:] for i in raw_data).encode('utf-8')
     hash_sum = hashlib.sha256(bytes_data).digest()
-    result = str(hash_sum).replace('\\','')[2:-1]
+
+    result = str(ubinascii.b2a_base64(hash_sum)[:-3])
     print('HASH is:', result)
     return result
 
@@ -213,48 +215,22 @@ def resolveAccess(key: bytes) -> None:
     elif OPERATION == LOCK:
         print('to be locked')
 
-    req = {"type":"request","operation":OPERATION,"id":config.MACHINE_NAME,"key":hashResult}
-    request = json.dumps(req) + "\r\n"
-    print("The access request is:\n", request)
+    keys_list = []
+    with open('keys.json') as f:
+        keys_list = json.loads(f.read())
 
-    data = sendToSocket(request)
-
-    if data:
-        try:
-            result = json.loads(data)['result']
-        except:
-            result = ''
-
-    if OPERATION == UNLOCK and ("grant" in data):   # UNLOCK grant
+    if OPERATION == UNLOCK and (hashResult in keys_list):   # UNLOCK grant
         unlock()
         print("Access granted")
-    elif OPERATION == UNLOCK and ("deny" in data):  # UNLOCK deny
+    elif OPERATION == UNLOCK and (hashResult not in keys_list):  # UNLOCK deny
         denied()
         print("Access denied")
-    elif OPERATION == LOCK and ("confirmed" in data): # LOCK confirm
+        pass
+    elif OPERATION == LOCK: # LOCK confirm
         lock()
         print("Access granted")
     else:
         print("Response is neither approve nor rejects the access.")
         print("Doing nothing")
-
-
-def sendHeartbeat(_) -> None:
-    """
-    Sending heartbeat request to the server every {config.HEARTBEAT_INTERVAL}
-    seconds so that the server doesn't count extra time of using the machine
-    in case the reader is stuck and is not able to log out the user.
-    """
-    req = {"type":"heartbeat","id":config.MACHINE_NAME}
-    request = json.dumps(req) + "\r\n"
-    print("The heartbeat request is:\n", request)
-
-    data = sendToSocket(request)
-    print(data)
-
-
-heartbeatTimer.init(period=config.HEARTBEAT_INTERVAL,
-                    mode=Timer.PERIODIC,
-                    callback=sendHeartbeat)
 
 read(1) # First initial try to read before the interrupt can start working normally
