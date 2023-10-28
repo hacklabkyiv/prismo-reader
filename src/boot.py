@@ -18,18 +18,6 @@ l = NeoPixel(led, LED_QTY)
 l.fill((0,0,0))
 l.write()
 
-# def ledIndication(colors: dict=COLORS, led_qty: int=config.LED_QTY) -> None:
-#     """
-#     """
-#     colors = [c for c in COLORS.keys()]
-#     while
-#     for r in range(255):
-#         for g in range(255):
-#             for b in range(255):
-#                 l.fill((r,g,b))
-#                 l.write()
-
-
 
 wlan = network.WLAN(network.STA_IF) # create station interface
 wlan.active(True)       # activate the interface

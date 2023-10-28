@@ -11,12 +11,12 @@ from machine import Pin, SPI, Timer
 from time import sleep, sleep_ms
 
 import json
-import socket
 import hashlib
-import ubinascii
 
 import PN532 as nfc
 import config
+import urequests as requests
+from config import DEVICE_ID, HOST
 
 # STATUS = !OPERATION
 # For the cold start the status is locked and the operation request is to unlock
@@ -27,7 +27,6 @@ OPERATION = UNLOCK
 # Pins
 buzzer = Pin(19, Pin.OUT, value=0)
 relay = Pin(18, Pin.OUT, value=0)
-# GWIOT_RX = Pin(21)      # GWIOT_7941E_RX_PIN 21
 
 # Timers for auto periodic processes
 heartbeatTimer = Timer(0)
@@ -39,15 +38,77 @@ cs = Pin(2, Pin.OUT)
 cs.on()
 
 # SENSOR INIT
-pn532 = nfc.PN532(spi_dev,cs)
+pn532 = nfc.PN532(spi_dev, cs)
 ic, ver, rev, support = pn532.get_firmware_version()
-print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
+print("Found PN532 with firmware version: {0}.{1}".format(ver, rev))
 
 # Configure PN532 to communicate with MiFare cards
 pn532.SAM_configuration()
 
 
-def read_nfc(dev: PN532, tmot: int=5000) -> bytearray:
+def update_allowed_keys() -> list:
+    """
+    Get list of keys, allowed to open selected reader from server. Store them
+    in separate file as json array.
+    """
+    KEY_FILE = "keys.json"
+    
+    json_data = []
+    # To prevent wearing of flash memory, we check file content first
+    with open(KEY_FILE, "r") as file:
+        content = file.read()
+        try:
+            json_data = json.loads(content)
+            print("Allowed keys: ", json_data)
+        except Exception as e:
+            print("Cannot parse stored keys, error:", e)
+            
+    
+    url = "http://{}/readers/user_with_access/{}".format(HOST, DEVICE_ID)
+    try:
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            # Write new data to file only if there is updates
+            new_json_data = json.loads(response.text)
+            if new_json_data != json_data:
+                # Open a file for writing the response content
+                print("Access keys updated from server: ", response.text)
+                with open(KEY_FILE, "w") as file:
+                    file.write(response.text)
+                response.close()
+            json_data = new_json_data
+
+        else:
+            print("Cannot update access keys from server, code:", response.status_code)
+            response.close()
+
+    except Exception as e:
+        print("Can't perform request to ", HOST, " Request error: ", e)
+    
+    return json_data
+
+
+
+
+def report_key_use(key, operation) -> None:
+    url = "http://{}/readers/{}/{}/{}".format(HOST, operation, key, DEVICE_ID)
+    response = None
+    try:
+        response = requests.post(url)
+        # You can handle the response here, for example, check for a successful status code.
+        if response.status_code == 200:
+            print("Request successful")
+        else:
+            print("Request failed with status code:", response.status_code)
+    except Exception as e:
+        print("Request error:", e)
+    finally:
+        if response is not None:
+            response.close()
+
+
+def read_nfc(dev: PN532, tmot: int = 5000) -> bytearray:
     """
     Reads the tag and returns the code of the tag.
     Args:
@@ -56,43 +117,29 @@ def read_nfc(dev: PN532, tmot: int=5000) -> bytearray:
     Returns:
         bytearray:      The data read from the tag
     """
-    print('Reading...')
+    # print('Reading...')
     uid = dev.read_passive_target(timeout=tmot)
     if uid is None:
-        print('Not found, try again.')
+        # print('Not found, try again.')
         return None
     else:
         numbers = [i for i in uid]
-        print('Raw data:', uid)
-        print('Found card with UID:', [hex(i) for i in uid])
+        print("Raw data:", uid)
+        print("Found card with UID:", [hex(i) for i in uid])
         return uid
 
 
 def read(_) -> None:
-        key = read_nfc(pn532)
-        if key is not None:
-            resolveAccess(key)
-        sleep(1)
+    key = read_nfc(pn532)
+    if key is not None:
+        resolve_access(key)
+    sleep(0.1)
+
 
 irq_pin.irq(read)
 
-def hashTag(raw_data: bytearray) -> bytes:
-    """
-    Create a hash sum of the input value.
-    Args:
-        raw_data (bytearray):   bytearray to be transformed
-    Returns:
-        bytes:  the hash sum of the tag
-    """
-    bytes_data = ''.join(hex(i)[2:] for i in raw_data).encode('utf-8')
-    hash_sum = hashlib.sha256(bytes_data).digest()
 
-    result = str(ubinascii.b2a_base64(hash_sum)[:-3])
-    print('HASH is:', result)
-    return result
-
-
-def beep(qty: int=1, long: bool=False) -> None:
+def beep(qty: int = 1, long: bool = False) -> None:
     """
     Producing a beep sound on an active buzzer.
     Args:
@@ -111,7 +158,7 @@ def beep(qty: int=1, long: bool=False) -> None:
             sleep_ms(time_delay)
 
 
-def ledIndication(color: str, led_qty: int=config.LED_QTY) -> None:
+def led_indication(color: str, led_qty: int = config.LED_QTY) -> None:
     """
     Provides light indication of the event or status.
     Args:
@@ -135,7 +182,7 @@ def unlock() -> None:
     OPERATION = LOCK
 
     relay.value(0)
-    ledIndication('green')
+    led_indication("green")
     beep(2, False)
 
 
@@ -147,7 +194,7 @@ def lock() -> None:
     OPERATION = UNLOCK
 
     relay.value(1)
-    ledIndication('red')
+    led_indication("red")
     beep(1, True)
 
 
@@ -156,49 +203,13 @@ def denied() -> None:
     Operationn denied. Indicate the issue.
     Sounds as X in Morse
     """
-    ledIndication('indigo')
+    led_indication("indigo")
     beep(1, True)
     beep(2, False)
     beep(1, True)
 
 
-def sendToSocket(request: str) -> str:
-    """
-    Sends a request to the server and receives a response.
-    Args:
-        request (str): The request to send
-    Returns:
-        str: collects, concatenates and returns the response
-    """
-    print("Open TCP socket")
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(socket.getaddrinfo(config.HOST, config.PORT)[0][-1])
-        requestSize = s.send(request)
-        print("Request of a ", requestSize, " bytes is sent")
-
-        print("The response is:")
-        data = ''
-        while True:
-            data += str(s.recv(100), 'utf8')    # Reading 100 bytes pieces
-            print('receiving...')
-            if data is '':
-                print("No response received")
-                break
-            elif '\r\n' in data:                # Detect end of the packet
-                print(data, end='')
-                break
-        print("Closing the socket.")
-    except Exception() as e:
-        print(e)
-        print("Ooops, something went wrong ¯\_(ツ)_/¯.")
-    finally:
-        s.close()
-
-    return data
-
-
-def resolveAccess(key: bytes) -> None:
+def resolve_access(key: bytes) -> None:
     """
     Sends the hash sum of the key to the server with a request.
     Depending on access rights of the key owner performs an action -
@@ -206,31 +217,33 @@ def resolveAccess(key: bytes) -> None:
     Args:
         key (bytes):        the value from the tag
     """
-    global OPERATION, LOCK, UNLOCK
-    print('Sending request...')
-    hashResult = str(hashTag(key))
+    global OPERATION, LOCK, UNLOCK, keys_list
 
+    hashed_key = hashlib.sha256(key).digest().hex()
+    print("Sending request...", hashed_key)
     if OPERATION == UNLOCK:
-        print('to be unlocked')
+        print("to be unlocked")
     elif OPERATION == LOCK:
-        print('to be locked')
+        print("to be locked")
 
-    keys_list = []
-    with open('keys.json') as f:
-        keys_list = json.loads(f.read())
-
-    if OPERATION == UNLOCK and (hashResult in keys_list):   # UNLOCK grant
+    if OPERATION == UNLOCK and (hashed_key in keys_list):  # UNLOCK grant
         unlock()
         print("Access granted")
-    elif OPERATION == UNLOCK and (hashResult not in keys_list):  # UNLOCK deny
+        report_key_use(hashed_key, "start_work")
+    elif OPERATION == UNLOCK and (hashed_key not in keys_list):  # UNLOCK deny
         denied()
         print("Access denied")
-        pass
-    elif OPERATION == LOCK: # LOCK confirm
+        report_key_use(hashed_key, "start_work")  # TODO: add another operation
+    elif OPERATION == LOCK:  # LOCK confirm
         lock()
         print("Access granted")
+        report_key_use(hashed_key, "stop_work")
     else:
         print("Response is neither approve nor rejects the access.")
         print("Doing nothing")
+    # We update allowed keys list every time, when any card is checked.
+    keys_list = update_allowed_keys()
 
-read(1) # First initial try to read before the interrupt can start working normally
+
+keys_list = update_allowed_keys()
+read(1)  # First initial try to read before the interrupt can start working normally
