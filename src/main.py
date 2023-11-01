@@ -28,9 +28,6 @@ OPERATION = UNLOCK
 buzzer = Pin(19, Pin.OUT, value=0)
 relay = Pin(18, Pin.OUT, value=0)
 
-# Timers for auto periodic processes
-heartbeatTimer = Timer(0)
-
 # SPI
 spi_dev = SPI(1, baudrate=1000000)
 irq_pin = Pin(25, Pin.IN)
@@ -44,8 +41,7 @@ print("Found PN532 with firmware version: {0}.{1}".format(ver, rev))
 
 # Configure PN532 to communicate with MiFare cards
 pn532.SAM_configuration()
-
-
+keys_list = []
 def update_allowed_keys() -> list:
     """
     Get list of keys, allowed to open selected reader from server. Store them
@@ -54,7 +50,8 @@ def update_allowed_keys() -> list:
     KEY_FILE = "keys.json"
     
     json_data = []
-    # To prevent wearing of flash memory, we check file content first
+    # To prevent wearing of flash memory, we check file content first. Also, we just read
+    # keys when we are offline
     with open(KEY_FILE, "r") as file:
         content = file.read()
         try:
@@ -62,7 +59,6 @@ def update_allowed_keys() -> list:
             print("Allowed keys: ", json_data)
         except Exception as e:
             print("Cannot parse stored keys, error:", e)
-            
     
     url = "http://{}/readers/user_with_access/{}".format(HOST, DEVICE_ID)
     try:
@@ -107,6 +103,7 @@ def report_key_use(key, operation) -> None:
         if response is not None:
             response.close()
 
+keys_list = update_allowed_keys()
 
 def read_nfc(dev: PN532, tmot: int = 5000) -> bytearray:
     """
@@ -133,7 +130,7 @@ def read(_) -> None:
     key = read_nfc(pn532)
     if key is not None:
         resolve_access(key)
-    sleep(0.1)
+    sleep(0.25)
 
 
 irq_pin.irq(read)
@@ -220,30 +217,33 @@ def resolve_access(key: bytes) -> None:
     global OPERATION, LOCK, UNLOCK, keys_list
 
     hashed_key = hashlib.sha256(key).digest().hex()
-    print("Sending request...", hashed_key)
+    print("Check key: ", hashed_key)
     if OPERATION == UNLOCK:
         print("to be unlocked")
     elif OPERATION == LOCK:
         print("to be locked")
 
+    reported_operation = ""
     if OPERATION == UNLOCK and (hashed_key in keys_list):  # UNLOCK grant
         unlock()
         print("Access granted")
-        report_key_use(hashed_key, "start_work")
+        reported_operation = "start_work"
+        
     elif OPERATION == UNLOCK and (hashed_key not in keys_list):  # UNLOCK deny
         denied()
         print("Access denied")
-        report_key_use(hashed_key, "start_work")  # TODO: add another operation
+        reported_operation = "start_work"  # TODO: add another operation
+        
     elif OPERATION == LOCK:  # LOCK confirm
         lock()
         print("Access granted")
-        report_key_use(hashed_key, "stop_work")
+        reported_operation = "stop_work"
     else:
         print("Response is neither approve nor rejects the access.")
         print("Doing nothing")
-    # We update allowed keys list every time, when any card is checked.
+    # Do all network work after reader response: this will 
+    # decrease delays in UX: user will not wait if there is network error
     keys_list = update_allowed_keys()
+    report_key_use(hashed_key, reported_operation)
 
-
-keys_list = update_allowed_keys()
 read(1)  # First initial try to read before the interrupt can start working normally

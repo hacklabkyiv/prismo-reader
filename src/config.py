@@ -11,11 +11,7 @@ STAPSK = "derparol"
 
 HOSTNAME = "TestingDevice"
 HOST = "192.168.0.123:5000"
-# HOST = "192.168.88.220"
-PORT = "9999"
-MACHINE_NAME = "bigcnc"
 DEVICE_ID = "d2db5ec4-6e7a-11ee-b962-0242ac120002"
-HEARTBEAT_INTERVAL = 100000     # milliseconds
 
 LED_QTY = 4
 COLORS = {
