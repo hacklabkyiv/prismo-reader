@@ -13,6 +13,9 @@ HOSTNAME = "TestingDevice"
 HOST = "192.168.0.123:5000"
 DEVICE_ID = "d2db5ec4-6e7a-11ee-b962-0242ac120002"
 
+NFC_READ_TIMEOUT = 100
+BEEP_ON = False # Because my cat is nervous during debugging
+
 LED_QTY = 4
 COLORS = {
     'none':     [0,0,0],
