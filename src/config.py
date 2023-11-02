@@ -15,7 +15,9 @@ DEVICE_ID = "d2db5ec4-6e7a-11ee-b962-0242ac120002"
 
 NFC_READ_TIMEOUT = 100
 BEEP_ON = False # Because my cat is nervous during debugging
-
+PING_TIMEOUT = 500 # In ms, check before making any request to prevent hangout
+ACCESS_KEYS_FILE = "keys.json"
+CHECK_TIME_SLEEP = 2
 LED_QTY = 4
 COLORS = {
     'none':     [0,0,0],

@@ -15,8 +15,19 @@ import hashlib
 
 import PN532 as nfc
 import config
-import urequests as requests
-from config import DEVICE_ID, HOST, BEEP_ON, NFC_READ_TIMEOUT
+
+import requests
+from config import (
+    DEVICE_ID,
+    HOST,
+    BEEP_ON,
+    NFC_READ_TIMEOUT,
+    PING_TIMEOUT,
+    ACCESS_KEYS_FILE,
+    CHECK_TIME_SLEEP,
+)
+
+from uping import ping
 
 # Pins
 buzzer = Pin(19, Pin.OUT, value=0)
@@ -37,17 +48,29 @@ print("Found PN532 with firmware version: {0}.{1}".format(ver, rev))
 pn532.SAM_configuration()
 
 
-def update_access_keys() -> list:
+def check_connection() -> bool:
+    N_TRIES = 1
+    hostname, _ = HOST.split(":")
+    try:
+        ping_result = ping(hostname, count=N_TRIES, timeout=PING_TIMEOUT)
+    except Exception as e:
+        print("Ping failed due to: ", "Request error: ", e)
+        return False
+
+    # Number of tries should be the same as number of successful responses
+    if ping_result == (N_TRIES, N_TRIES):
+        return True
+    else:
+        return False
+
+
+def get_access_keys() -> list:
     """
-    Get list of keys, allowed to open selected reader from server. Store them
-    in separate file as json array.
+    Get list of access keys, stored in local storage
     """
-    KEY_FILE = "keys.json"
 
     json_data = []
-    # To prevent wearing of flash memory, we check file content first. Also, we just read
-    # keys when we are offline
-    with open(KEY_FILE, "r") as file:
+    with open(ACCESS_KEYS_FILE, "r") as file:
         content = file.read()
         try:
             json_data = json.loads(content)
@@ -55,17 +78,33 @@ def update_access_keys() -> list:
         except Exception as e:
             print("Cannot parse stored keys, error:", e)
 
+    return json_data
+
+
+def update_access_keys() -> bool:
+    """
+    Get new access keys from server. Return True if success
+    """
+    # To prevent wearing of flash memory, we check file content first. Also, we just read
+    # keys when we are offline
+    json_data = get_access_keys()
+
+    if not check_connection():
+        print("PING server failed, use stored keys")
+        return False
+
     url = "http://{}/readers/user_with_access/{}".format(HOST, DEVICE_ID)
     try:
-        response = requests.get(url)
-
+        print("Start requests")
+        response = requests.get(url, timeout=1)
+        print("Finish GET")
         if response.status_code == 200:
             # Write new data to file only if there is updates
             new_json_data = json.loads(response.text)
             if new_json_data != json_data:
                 # Open a file for writing the response content
                 print("Access keys updated from server: ", response.text)
-                with open(KEY_FILE, "w") as file:
+                with open(ACCESS_KEYS_FILE, "w") as file:
                     file.write(response.text)
                 response.close()
             json_data = new_json_data
@@ -73,11 +112,13 @@ def update_access_keys() -> list:
         else:
             print("Cannot update access keys from server, code:", response.status_code)
             response.close()
+            return False
 
     except Exception as e:
         print("Can't perform request to ", HOST, " Request error: ", e)
+        return False
 
-    return json_data
+    return True
 
 
 def report_key_use(key, operation) -> None:
@@ -193,24 +234,39 @@ class ReaderState:
 
 lock()
 state = ReaderState.LOCKED
-access_keys_list = update_access_keys()
+
+if check_connection():
+    update_access_keys()
+
+access_keys_list = get_access_keys()
 
 while True:
     key = read_nfc(pn532, NFC_READ_TIMEOUT)
     if key is None:
         continue
+
     hashed_key = hashlib.sha256(key).digest().hex()
     print("Check key: ", hashed_key)
+    # Here we do quick ping to check if server is reachable to prevent long wait.
+    # This is because timeouts are not supported in requests mode.
+    server_connected = check_connection()
     if (state is ReaderState.LOCKED) and (hashed_key in access_keys_list):
         unlock()
         state = ReaderState.UNLOCKED
-        report_key_use(hashed_key, "start_work")
+        if server_connected:
+            report_key_use(hashed_key, "start_work")
+
     elif (state is ReaderState.LOCKED) and (hashed_key not in access_keys_list):
         deny()
-        report_key_use(hashed_key, "deny_access")
+        if server_connected:
+            report_key_use(hashed_key, "deny_access")
+
     elif state is ReaderState.UNLOCKED:
         lock()
         state = ReaderState.LOCKED
-        report_key_use(hashed_key, "stop_work")
+        if server_connected:
+            report_key_use(hashed_key, "stop_work")
     # We update access key list every time when any key is detected.
-    access_keys_list = update_access_keys()
+    if server_connected and update_access_keys():
+        access_keys_list = get_access_keys()
+    sleep(CHECK_TIME_SLEEP)
