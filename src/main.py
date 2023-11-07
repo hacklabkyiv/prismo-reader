@@ -1,7 +1,3 @@
-"""
-Main script is executed right after boot.py.
-All the logic is scripted here.
-"""
 __author__ = "sashkoiv"
 __copyright__ = "Copyright 2023, KyivHacklab"
 __credits__ = ["artsin, sashkoiv, paulftw, lazer_ninja, Vova Stelmashchuk"]
@@ -69,16 +65,17 @@ def get_access_keys() -> list:
     Get list of access keys, stored in local storage
     """
 
-    json_data = []
+    keys = []
     with open(ACCESS_KEYS_FILE, "r") as file:
         content = file.read()
         try:
             json_data = json.loads(content)
+            keys = json_data["keys"]
             print("Allowed keys: ", json_data)
         except Exception as e:
             print("Cannot parse stored keys, error:", e)
 
-    return json_data
+    return keys
 
 
 def update_access_keys() -> bool:
@@ -93,7 +90,7 @@ def update_access_keys() -> bool:
         print("PING server failed, use stored keys")
         return False
 
-    url = "http://{}/readers/user_with_access/{}".format(HOST, DEVICE_ID)
+    url = "http://{}/reader/{}/accesses/".format(HOST, DEVICE_ID)
     try:
         print("Start requests")
         response = requests.get(url, timeout=1)
@@ -122,10 +119,11 @@ def update_access_keys() -> bool:
 
 
 def report_key_use(key, operation) -> None:
-    url = "http://{}/readers/{}/{}/{}".format(HOST, operation, key, DEVICE_ID)
+    url = "http://{}/reader/{}/log_operation".format(HOST, DEVICE_ID)
     response = None
+    json_payload = json.dumps({"operation": operation, "key": key})
     try:
-        response = requests.post(url)
+        response = requests.post(url, json=json_payload)
         # You can handle the response here, for example, check for a successful status code.
         if response.status_code == 200:
             print("Request successful")
@@ -254,7 +252,7 @@ while True:
         unlock()
         state = ReaderState.UNLOCKED
         if server_connected:
-            report_key_use(hashed_key, "start_work")
+            report_key_use(hashed_key, "unlock")
 
     elif (state is ReaderState.LOCKED) and (hashed_key not in access_keys_list):
         deny()
@@ -265,7 +263,7 @@ while True:
         lock()
         state = ReaderState.LOCKED
         if server_connected:
-            report_key_use(hashed_key, "stop_work")
+            report_key_use(hashed_key, "lock")
     # We update access key list every time when any key is detected.
     if server_connected and update_access_keys():
         access_keys_list = get_access_keys()
