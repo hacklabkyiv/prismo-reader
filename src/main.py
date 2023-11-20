@@ -12,7 +12,7 @@ import hashlib
 import PN532 as nfc
 import config
 
-import requests
+import urequests as requests
 from config import (
     DEVICE_ID,
     HOST,
@@ -32,11 +32,14 @@ relay = Pin(18, Pin.OUT, value=0)
 # SPI
 spi_dev = SPI(1, baudrate=1000000)
 irq_pin = Pin(25, Pin.IN)
+rst_pin = Pin(16, Pin.OUT)
 cs = Pin(2, Pin.OUT)
+cs.off()
+sleep(1)
 cs.on()
 
 # SENSOR INIT
-pn532 = nfc.PN532(spi_dev, cs)
+pn532 = nfc.PN532(spi_dev, cs, reset=rst_pin)
 ic, ver, rev, support = pn532.get_firmware_version()
 print("Found PN532 with firmware version: {0}.{1}".format(ver, rev))
 
@@ -119,6 +122,7 @@ def update_access_keys() -> bool:
 
 
 def report_key_use(key, operation) -> None:
+    print("Report key use:", key, operation)
     url = "http://{}/reader/{}/log_operation".format(HOST, DEVICE_ID)
     response = None
     json_payload = json.dumps({"operation": operation, "key": key})
@@ -242,27 +246,30 @@ while True:
     key = read_nfc(pn532, NFC_READ_TIMEOUT)
     if key is None:
         continue
-
+    beep(1)
     hashed_key = hashlib.sha256(key).digest().hex()
     print("Check key: ", hashed_key)
     # Here we do quick ping to check if server is reachable to prevent long wait.
     # This is because timeouts are not supported in requests mode.
-    server_connected = check_connection()
+    server_connected = False
     if (state is ReaderState.LOCKED) and (hashed_key in access_keys_list):
         unlock()
         state = ReaderState.UNLOCKED
-        if server_connected:
+        if check_connection():
+            server_connected = True
             report_key_use(hashed_key, "unlock")
 
     elif (state is ReaderState.LOCKED) and (hashed_key not in access_keys_list):
         deny()
-        if server_connected:
+        if check_connection():
+            server_connected = True
             report_key_use(hashed_key, "deny_access")
 
     elif state is ReaderState.UNLOCKED:
         lock()
         state = ReaderState.LOCKED
-        if server_connected:
+        if check_connection():
+            server_connected = True
             report_key_use(hashed_key, "lock")
     # We update access key list every time when any key is detected.
     if server_connected and update_access_keys():
