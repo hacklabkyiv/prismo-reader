@@ -39,9 +39,17 @@ sleep(1)
 cs.on()
 
 # SENSOR INIT
-pn532 = nfc.PN532(spi_dev, cs, reset=rst_pin)
-ic, ver, rev, support = pn532.get_firmware_version()
-print("Found PN532 with firmware version: {0}.{1}".format(ver, rev))
+while True:
+    try:
+        pn532 = nfc.PN532(spi_dev, cs, reset=rst_pin)
+        sleep(0.3)
+        ic, ver, rev, support = pn532.get_firmware_version()
+        print("Found PN532 with firmware version: {0}.{1}".format(ver, rev))
+        break
+    except Exception as e:
+        print("Cannot init PN532 due to: ", "Request error: ", e)
+        sleep(1)
+        print("Try again")
 
 # Configure PN532 to communicate with MiFare cards
 pn532.SAM_configuration()
@@ -69,14 +77,15 @@ def get_access_keys() -> list:
     """
 
     keys = []
-    with open(ACCESS_KEYS_FILE, "r") as file:
-        content = file.read()
-        try:
+    try:
+        with open(ACCESS_KEYS_FILE, "r") as file:
+            content = file.read()
             json_data = json.loads(content)
             keys = json_data["keys"]
             print("Allowed keys: ", json_data)
-        except Exception as e:
-            print("Cannot parse stored keys, error:", e)
+            
+    except Exception as e:
+        print("Cannot upload and parse stored keys, error:", e)
 
     return keys
 
@@ -93,7 +102,7 @@ def update_access_keys() -> bool:
         print("PING server failed, use stored keys")
         return False
 
-    url = "http://{}/reader/{}/accesses/".format(HOST, DEVICE_ID)
+    url = "http://{}/devices/{}/accesses/".format(HOST, DEVICE_ID)
     try:
         print("Start requests")
         response = requests.get(url, timeout=1)
@@ -123,7 +132,7 @@ def update_access_keys() -> bool:
 
 def report_key_use(key, operation) -> None:
     print("Report key use:", key, operation)
-    url = "http://{}/reader/{}/log_operation".format(HOST, DEVICE_ID)
+    url = "http://{}/devices/{}/log_operation".format(HOST, DEVICE_ID)
     response = None
     json_payload = json.dumps({"operation": operation, "key": key})
     try:
