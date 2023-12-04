@@ -136,7 +136,7 @@ def report_key_use(key, operation) -> None:
     response = None
     json_payload = json.dumps({"operation": operation, "key": key})
     try:
-        response = requests.post(url, json=json_payload)
+        response = requests.post(url, headers = {'content-type': 'application/json'}, data = json_payload).json()
         # You can handle the response here, for example, check for a successful status code.
         if response.status_code == 200:
             print("Request successful")
