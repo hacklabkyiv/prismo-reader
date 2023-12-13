@@ -33,11 +33,13 @@ relay = Pin(18, Pin.OUT, value=0)
 spi_dev = SPI(1, baudrate=1000000)
 irq_pin = Pin(25, Pin.IN)
 rst_pin = Pin(16, Pin.OUT)
-cs = Pin(2, Pin.OUT)
+cs = Pin(9, Pin.OUT)
 cs.off()
 sleep(1)
 cs.on()
 
+# Force logout button
+logout_btn = Pin(22, Pin.IN)
 # SENSOR INIT
 while True:
     try:
@@ -82,9 +84,12 @@ def get_access_keys() -> list:
             content = file.read()
             json_data = json.loads(content)
             keys = json_data["keys"]
+            print("<UPDATE KEYS OK>") # Tag about success boot, used by automatic flasher
             print("Allowed keys: ", json_data)
             
+            
     except Exception as e:
+        print("<UPDATE KEYS FAILED>") # Tag about success boot, used by automatic flasher
         print("Cannot upload and parse stored keys, error:", e)
 
     return keys
@@ -253,6 +258,8 @@ access_keys_list = get_access_keys()
 
 while True:
     key = read_nfc(pn532, NFC_READ_TIMEOUT)
+    if logout_btn.value() == 0:
+        print("Logout button was pressed")
     if key is None:
         continue
     beep(1)
