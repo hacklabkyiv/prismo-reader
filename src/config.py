@@ -6,12 +6,32 @@ __copyright__ = "Copyright 2023, KyivHacklab"
 __credits__ = ["artsin, sashkoiv, paulftw, lazer_ninja, Vova Stelmashchuk"]
 
 
-STASSID = "HackLab"
-STAPSK = "derparol"
+import json
 
-HOSTNAME = "TestingDevice"
-HOST = "192.168.0.123:5000"
-DEVICE_ID = "d2db5ec4-6e7a-11ee-b962-0242ac120002"
+def get_config_data() -> dict:
+    """
+    Get 
+    """
+
+    json_data = {}
+    try:
+        with open("config.json", "r") as file:
+            content = file.read()
+            json_data = json.loads(content)
+            #print("Read config file ok:", json_data)     
+    except Exception as e:
+        print("Cannot get stored config, error:", e)
+
+    return json_data
+
+stored_config = get_config_data()
+print("Stored config: ", stored_config)
+STASSID = stored_config["SSID"] 
+STAPSK = stored_config["PSK"]
+
+HOSTNAME = stored_config["HOSTNAME"]
+HOST = stored_config["SERVER"] # in format "192.168.0.123:5000"
+DEVICE_ID = stored_config['DEVICE_ID'] # in format "d2db5ec4-6e7a-11ee-b962-0242ac120002"
 
 NFC_READ_TIMEOUT = 100
 BEEP_ON = False # Because my cat is nervous during debugging

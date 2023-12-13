@@ -30,7 +30,6 @@ function flash_firmware() {
 
 function upload_source_code() {
   local port="$1"
-  local source_dir="$2"
 
   echo "Uploading source code..."
   for file in ./*.py; do
@@ -44,6 +43,19 @@ function upload_source_code() {
       fi
     fi
   done
+}
+
+function upload_config() {
+  local port="$1"
+
+  echo "Uploading source code..."
+  
+  if ampy --port "$port" put config.json; then
+    echo "UPLOAD CONFIG FILE: OK"
+  else
+    echo "UPLOAD CONFIG FILE: Fail"
+    exit 1
+  fi
 }
 
 function connect_and_wait_for_boot() {
@@ -84,5 +96,6 @@ SRC_DIR="src"
 # Call functions
 erase_flash "$PORT" "$ESPTOOL"
 flash_firmware "$PORT" "$ESPTOOL" "$FW_FILE"
-upload_source_code "$PORT" "$SRC_DIR"
+upload_source_code "$PORT"
+upload_config "$PORT"
 connect_and_wait_for_boot "$PORT" "$ESPTOOL"
