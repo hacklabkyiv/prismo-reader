@@ -84,12 +84,9 @@ def get_access_keys() -> list:
             content = file.read()
             json_data = json.loads(content)
             keys = json_data["keys"]
-            print("<UPDATE KEYS OK>") # Tag about success boot, used by automatic flasher
             print("Allowed keys: ", json_data)
             
-            
     except Exception as e:
-        print("<UPDATE KEYS FAILED>") # Tag about success boot, used by automatic flasher
         print("Cannot upload and parse stored keys, error:", e)
 
     return keys
@@ -121,15 +118,18 @@ def update_access_keys() -> bool:
                 with open(ACCESS_KEYS_FILE, "w") as file:
                     file.write(response.text)
                 response.close()
+                print("<UPDATE KEYS OK>") # Tag about success boot, used by automatic flasher
             json_data = new_json_data
 
         else:
             print("Cannot update access keys from server, code:", response.status_code)
             response.close()
+            print("<UPDATE KEYS FAILED>") # Tag about success boot, used by automatic flasher
             return False
 
     except Exception as e:
         print("Can't perform request to ", HOST, " Request error: ", e)
+        print("<UPDATE KEYS FAILED>") # Tag about success boot, used by automatic flasher
         return False
 
     return True

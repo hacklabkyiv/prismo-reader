@@ -1,15 +1,47 @@
 #!/bin/bash
 
+# This script is used by Prismo server to automatically update reader firmware by its internal 
+# Usage: flasher.sh device_id
+# Define your variables below to be sure that script runs ok separately.
+# For automated parsing of progress, there is system of tags, defined in code:
+#   [STATUS: <status message>] - will be displayed as text on frontend
+#   [PROGRESS: <percentage>] - will be displayed as progress bar
+
+
+DEVICE_ID="$1" # Took from arguments
+PORT="/dev/ttyUSB0"
+ESPTOOL="/home/artsin/Dev/esptool/esptool.py"
+FW_FILE="/home/artsin/Downloads/ESP32_GENERIC-20231005-v1.21.0.bin"
+
 # Define functions
+function create_config_file() {
+  local device_id="$1"
+  # We construct hostname as mDNS string with .local domain
+  hostname="$(hostnamectl hostname)"
+  # Combine the hostname with ".local"
+  hostname_local="$hostname.local:5000"
+  
+  local server_address=$hostname_local
+   # Get Wi-Fi SSID and PSK
+  local wifi_ssid=$(nmcli -s device wifi show-password | grep "SSID"| cut -d" " -f2)
+  local wifi_password=$(nmcli -s device wifi show-password | grep "Password"| cut -d" " -f2)
+  
+  echo "[STATUS:Creating config file]"
+  
+  # Build configuration data
+  jo SSID=$wifi_ssid PSK=$wifi_password HOSTNAME=YOUR_READER_HOSTNAME SERVER=$server_address DEVICE_ID=$device_id > config.json
+  echo "[STATUS:CONFIG FILE CREATED]"
+}
+
 function erase_flash() {
   local port="$1"
   local esptool="$2"
 
-  echo "[Erasing flash]"
+  echo "[STATUS:Erasing flash]"
   if python3 $esptool --chip esp32 --port "$port" erase_flash; then
-    echo "[ERASE: OK]"
+    echo "[STATUS:ERASE OK]"
   else
-    echo "[ERASE: Fail]"
+    echo "[STATUS: ERASE FAILED]"
     exit 1
   fi
 }
@@ -19,11 +51,11 @@ function flash_firmware() {
   local esptool="$2"
   local firmware_file="$3"
 
-  echo "[Flashing MicroPython firmware]"
+  echo "[STATUS: Flashing MicroPython firmware]"
   if python3 $esptool --chip esp32 --port "$port" --baud 460800 write_flash -z 0x1000 "$firmware_file"; then
-    echo "[FLASH FIRMWARE: OK]"
+    echo "[STATUS:FLASH FIRMWARE OK]"
   else
-    echo "[FLASH FIRMWARE: Fail]"
+    echo "[STATUS:FLASH FIRMWARE FAILED]"
     exit 1
   fi
 }
@@ -31,14 +63,14 @@ function flash_firmware() {
 function upload_source_code() {
   local port="$1"
 
-  echo "[Uploading source code]"
+  echo "[STATUS:Uploading source code]"
   for file in ./*.py; do
     if [[ -f "$file" ]]; then
       echo "Uploading $file..."
       if ampy --port "$port" put "$file"; then
-        echo "[UPLOAD SOURCE CODE: OK]"
+        echo "[STATUS: UPLOAD $file OK]"
       else
-        echo "[UPLOAD SOURCE CODE: Fail]"
+        echo "[STATUS: UPLOAD $file FAILED]"
         exit 1
       fi
     fi
@@ -48,12 +80,12 @@ function upload_source_code() {
 function upload_config() {
   local port="$1"
 
-  echo "[Uploading config file]"
+  echo "[STATUS:Uploading config file]"
   
   if ampy --port "$port" put config.json; then
-    echo "[UPLOAD CONFIG FILE: OK]"
+    echo "[STATUS:UPLOAD CONFIG FILE OK]"
   else
-    echo "[UPLOAD CONFIG FILE: Fail]"
+    echo "[STATUS:UPLOAD CONFIG FILE FAILED]"
     exit 1
   fi
 }
@@ -61,11 +93,11 @@ function upload_config() {
 function connect_and_wait_for_boot() {
   local port="$1"
   local esptool="$2"
-  echo "[Reset device]"
+  echo "[STATUS: Reset device]"
   if python3 $esptool run; then
-    echo "RUN OK"
+    echo "[STATUS:RUN OK]"
   else
-   echo "RUN: Fail"
+   echo "[STATUS:RUN DEVICE FAILED]"
     exit 1
   fi
 
@@ -76,25 +108,22 @@ function connect_and_wait_for_boot() {
   echo "$line"
 
   if [[ "$line" == *"<UPDATE KEYS OK>"* ]]; then
-    echo "[FIRST BOOT: OK]"
-    exit 0
+    echo "[STATUS:FIRST BOOT OK]"
+    return 1
   fi
 
   if [[ "$line" == *"<UPDATE KEYS FAILED>"* ]]; then
-    echo "[FIRST BOOT: FAIL]"
+    echo "[STATUS:FIRST BOOT FAILED]"
     exit 1
   fi
   done < "$port"
 }
 
-# Define variables
-PORT="/dev/ttyUSB0"
-ESPTOOL="/home/artsin/Dev/esptool/esptool.py"
-FW_FILE="../fw/ESP32_GENERIC-20231005-v1.21.0.bin"
-SRC_DIR="src"
 
 # Call functions
-echo "[PROGRESS:0]"
+echo "[PROGRESS:5]"
+create_config_file "$DEVICE_ID"
+echo "[PROGRESS:10]"
 erase_flash "$PORT" "$ESPTOOL"
 echo "[PROGRESS:20]"
 flash_firmware "$PORT" "$ESPTOOL" "$FW_FILE"
@@ -105,3 +134,4 @@ upload_config "$PORT"
 echo "[PROGRESS:80]"
 connect_and_wait_for_boot "$PORT" "$ESPTOOL"
 echo "[PROGRESS:100]"
+exit 0
