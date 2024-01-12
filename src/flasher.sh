@@ -10,7 +10,7 @@
 
 DEVICE_ID="$1" # Took from arguments
 PORT="/dev/ttyUSB0"
-ESPTOOL="/app/external/prismo-reader-fw/esptool/esptool.py"
+ESPTOOL="esptool.py"
 FW_FILE="/app/external/prismo-reader-fw/ESP32_GENERIC-20231005-v1.21.0.bin"
 
 # Define functions
@@ -41,7 +41,7 @@ function erase_flash() {
   local esptool="$2"
 
   echo "[STATUS:Erasing flash]"
-  if python3 $esptool --chip esp32 --port "$port" erase_flash; then
+  if $esptool --chip esp32 --port "$port" erase_flash; then
     echo "[STATUS:ERASE OK]"
   else
     echo "[STATUS: ERASE FAILED]"
@@ -55,7 +55,7 @@ function flash_firmware() {
   local firmware_file="$3"
 
   echo "[STATUS: Flashing MicroPython firmware]"
-  if python3 $esptool --chip esp32 --port "$port" --baud 460800 write_flash -z 0x1000 "$firmware_file"; then
+  if $esptool --chip esp32 --port "$port" --baud 460800 write_flash -z 0x1000 "$firmware_file"; then
     echo "[STATUS:FLASH FIRMWARE OK]"
   else
     echo "[STATUS:FLASH FIRMWARE FAILED]"
@@ -97,7 +97,7 @@ function connect_and_wait_for_boot() {
   local port="$1"
   local esptool="$2"
   echo "[STATUS: Reset device]"
-  if python3 $esptool run; then
+  if $esptool run; then
     echo "[STATUS:RUN OK]"
   else
    echo "[STATUS:RUN DEVICE FAILED]"
