@@ -10,26 +10,29 @@
 
 DEVICE_ID="$1" # Took from arguments
 PORT="/dev/ttyUSB0"
-ESPTOOL="/home/artsin/Dev/esptool/esptool.py"
-FW_FILE="/home/artsin/Downloads/ESP32_GENERIC-20231005-v1.21.0.bin"
+ESPTOOL="/app/external/prismo-reader-fw/esptool/esptool.py"
+FW_FILE="/app/external/prismo-reader-fw/ESP32_GENERIC-20231005-v1.21.0.bin"
 
 # Define functions
 function create_config_file() {
   local device_id="$1"
-  # We construct hostname as mDNS string with .local domain
-  hostname="$(hostnamectl hostname)"
+
+  # Get hostname from environment variable, otherwise use hostnamectl
+  hostname="${HOST_HOSTNAME:-$(hostnamectl hostname)}"
+
   # Combine the hostname with ".local"
   hostname_local="$hostname.local:5000"
-  
-  local server_address=$hostname_local
-   # Get Wi-Fi SSID and PSK
-  local wifi_ssid=$(nmcli -s device wifi show-password | grep "SSID"| cut -d" " -f2)
-  local wifi_password=$(nmcli -s device wifi show-password | grep "Password"| cut -d" " -f2)
-  
+
+  # Get Wi-Fi SSID from environment variable, otherwise use nmcli
+  wifi_ssid="${HOST_WIFI_SSID:-$(nmcli -s device wifi show-password | grep "SSID"| cut -d" " -f2)}"
+
+  # Get Wi-Fi password from environment variable, otherwise use nmcli
+  wifi_password="${HOST_WIFI_PASSWORD:-$(nmcli -s device wifi show-password | grep "Password"| cut -d" " -f2)}"
+
   echo "[STATUS:Creating config file]"
-  
+
   # Build configuration data
-  jo SSID=$wifi_ssid PSK=$wifi_password HOSTNAME=YOUR_READER_HOSTNAME SERVER=$server_address DEVICE_ID=$device_id > config.json
+  jo SSID=$wifi_ssid PSK=$wifi_password HOSTNAME=$hostname SERVER=$hostname_local DEVICE_ID=$device_id > config.json
   echo "[STATUS:CONFIG FILE CREATED]"
 }
 
