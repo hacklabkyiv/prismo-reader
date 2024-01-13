@@ -7,11 +7,11 @@ Communication protocol
     "key": "123534"
 }
 
-"type" field can be: 
+"type" field can be:
  - "request": ask from reader to server
  - "response": response from server
  - "heartbeat": keepalive heatbeat from reader to server.
- 
+
 "id": identifier of device. It is name of reader, which is usually is the same as the name of machine it is installed, or "server".
 
 
@@ -32,7 +32,7 @@ Communication protocol
     'deny'
     'usernotfound'
 
-    
+
 {
     "type": "heartbeat",
     "id": "BigMill"
