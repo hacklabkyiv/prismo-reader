@@ -11,7 +11,7 @@
 DEVICE_ID="$1" # Took from arguments
 PORT="/dev/ttyUSB0"
 ESPTOOL="esptool.py"
-FW_FILE="/app/external/prismo-reader-fw/ESP32_GENERIC-20231005-v1.21.0.bin"
+FW_FILE="../fw/ESP32_GENERIC-20231005-v1.21.0.bin"
 
 # Define functions
 function create_config_file() {
