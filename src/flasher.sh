@@ -10,7 +10,7 @@
 
 DEVICE_ID="$1" # Took from arguments
 PORT="/dev/ttyUSB0"
-ESPTOOL="esptool.py"
+ESPTOOL="python3 /home/artsin/Dev/esptool/esptool.py"
 FW_FILE="../fw/ESP32_GENERIC-20231005-v1.21.0.bin"
 
 # Define functions
