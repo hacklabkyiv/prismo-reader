@@ -12288,6 +12288,7 @@
 		)
 	)
 	(symbol
+		(lib_name "Reader-altium-import:root_0_DIO_LED_WS2812_5050")
 		(lib_id "Reader-altium-import:root_0_DIO_LED_WS2812_5050")
 		(at 457.5 184.989 0)
 		(unit 1)
@@ -13386,6 +13387,7 @@
 		)
 	)
 	(symbol
+		(lib_name "Reader-altium-import:root_0_DIO_LED_WS2812_5050")
 		(lib_id "Reader-altium-import:root_0_DIO_LED_WS2812_5050")
 		(at 377.5 184.989 0)
 		(unit 1)
@@ -15728,6 +15730,7 @@
 		)
 	)
 	(symbol
+		(lib_name "Reader-altium-import:root_0_DIO_LED_WS2812_5050")
 		(lib_id "Reader-altium-import:root_0_DIO_LED_WS2812_5050")
 		(at 417.5 184.989 0)
 		(unit 1)
@@ -22908,6 +22911,7 @@
 		)
 	)
 	(symbol
+		(lib_name "Reader-altium-import:root_0_DIO_LED_WS2812_5050")
 		(lib_id "Reader-altium-import:root_0_DIO_LED_WS2812_5050")
 		(at 497.5 184.989 0)
 		(unit 1)
