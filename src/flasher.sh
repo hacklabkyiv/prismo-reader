@@ -11,7 +11,7 @@
 DEVICE_ID="$1" # Took from arguments
 PORT="/dev/ttyUSB0"
 ESPTOOL="esptool.py"
-FW_FILE="../fw/ESP32_GENERIC-20231005-v1.21.0.bin"
+FW_FILE="../fw/ESP32_GENERIC-20240105-v1.22.1.bin"
 
 # Define functions
 function create_config_file() {
@@ -63,32 +63,14 @@ function flash_firmware() {
   fi
 }
 
-function upload_source_code() {
+function upload_source_code_and_config() {
   local port="$1"
 
-  echo "[STATUS:Uploading source code]"
-  for file in ./*.py; do
-    if [[ -f "$file" ]]; then
-      echo "Uploading $file..."
-      if ampy --port "$port" put "$file"; then
-        echo "[STATUS: UPLOAD $file OK]"
-      else
-        echo "[STATUS: UPLOAD $file FAILED]"
-        exit 1
-      fi
-    fi
-  done
-}
-
-function upload_config() {
-  local port="$1"
-
-  echo "[STATUS:Uploading config file]"
-  
-  if ampy --port "$port" put config.json; then
-    echo "[STATUS:UPLOAD CONFIG FILE OK]"
+  echo "[STATUS:Uploading source code and config]"
+  if rshell -p "$port" "cp *.py /pyboard/; cp config.json /pyboard/"; then
+    echo "[STATUS:UPLOAD OK]"
   else
-    echo "[STATUS:UPLOAD CONFIG FILE FAILED]"
+    echo "[STATUS: UPLOAD FAILED]"
     exit 1
   fi
 }
@@ -104,7 +86,7 @@ function connect_and_wait_for_boot() {
     exit 1
   fi
 
-  sleep 1
+  sleep 3
 
   stty -F "$port" 115200 -echo -icrnl raw
   while read -r line; do
@@ -131,10 +113,8 @@ erase_flash "$PORT" "$ESPTOOL"
 echo "[PROGRESS:20]"
 flash_firmware "$PORT" "$ESPTOOL" "$FW_FILE"
 echo "[PROGRESS:40]"
-upload_source_code "$PORT"
+upload_source_code_and_config "$PORT"
 echo "[PROGRESS:60]"
-upload_config "$PORT"
-echo "[PROGRESS:80]"
 connect_and_wait_for_boot "$PORT" "$ESPTOOL"
 echo "[PROGRESS:100]"
 exit 0
