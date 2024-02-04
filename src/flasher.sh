@@ -10,7 +10,7 @@
 
 DEVICE_ID="$1" # Took from arguments
 PORT="/dev/ttyUSB0"
-ESPTOOL="python3 /home/artsin/Dev/esptool/esptool.py"
+ESPTOOL="esptool.py"
 FW_FILE="../fw/ESP32_GENERIC-20231005-v1.21.0.bin"
 
 # Define functions
@@ -125,11 +125,11 @@ function connect_and_wait_for_boot() {
 
 # Call functions
 echo "[PROGRESS:5]"
-create_config_file "$DEVICE_ID"
+#create_config_file "$DEVICE_ID"
 echo "[PROGRESS:10]"
-erase_flash "$PORT" "$ESPTOOL"
+#erase_flash "$PORT" "$ESPTOOL"
 echo "[PROGRESS:20]"
-flash_firmware "$PORT" "$ESPTOOL" "$FW_FILE"
+#flash_firmware "$PORT" "$ESPTOOL" "$FW_FILE"
 echo "[PROGRESS:40]"
 upload_source_code "$PORT"
 echo "[PROGRESS:60]"

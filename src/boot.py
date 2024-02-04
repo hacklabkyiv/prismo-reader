@@ -34,15 +34,15 @@ if not wlan.isconnected():
         g = 0
         b = 0
 
-        for r in range(0, 256, 20):
+        for r in range(128, 256, 20):
             l.fill((r, g, b))
             l.write()
             sleep_ms(1)
-        for g in range(0, 256, 20):
+        for g in range(50, 256, 20):
             l.fill((r, g, b))
             l.write()
             sleep_ms(1)
-        for b in range(0, 256, 20):
+        for b in range(256, 256, 256):
             l.fill((r, g, b))
             l.write()
             sleep_ms(1)

@@ -1,7 +1,1 @@
-{
-   "SSID":"YOUR_WIFI_SSID",
-   "PSK":"YOUR_PASSWORD",
-   "HOSTNAME":"YOUR_READER_HOSTNAME",
-   "SERVER":"192.168.0.123:123",
-   "DEVICE_ID":"YOUR DEVICE_ID"
-}
+{"SSID":"HackLab","PSK":"derparol","HOSTNAME":"artsin-MacBookPro","SERVER":"artsin-MacBookPro.local:5000","DEVICE_ID":"abc"}

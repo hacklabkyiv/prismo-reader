@@ -34,10 +34,10 @@ HOST = stored_config["SERVER"] # in format "192.168.0.123:5000"
 DEVICE_ID = stored_config['DEVICE_ID'] # in format "d2db5ec4-6e7a-11ee-b962-0242ac120002"
 
 NFC_READ_TIMEOUT = 100
-BEEP_ON = False # Because my cat is nervous during debugging
+#BEEP_ON = False # Because my cat is nervous during debugging
 PING_TIMEOUT = 500 # In ms, check before making any request to prevent hangout
 ACCESS_KEYS_FILE = "keys.json"
-CHECK_TIME_SLEEP = 2
+CHECK_TIME_SLEEP = 0.2
 LED_QTY = 4
 COLORS = {
     'none':     [0,0,0],

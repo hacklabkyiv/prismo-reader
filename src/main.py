@@ -16,7 +16,6 @@ import urequests as requests
 from config import (
     DEVICE_ID,
     HOST,
-    BEEP_ON,
     NFC_READ_TIMEOUT,
     PING_TIMEOUT,
     ACCESS_KEYS_FILE,
@@ -24,22 +23,24 @@ from config import (
 )
 
 from uping import ping
+from platform import Beeper
+
+beeper = Beeper()
 
 # Pins
-buzzer = Pin(19, Pin.OUT, value=0)
 relay = Pin(18, Pin.OUT, value=0)
 
 # SPI
 spi_dev = SPI(1, baudrate=1000000)
 irq_pin = Pin(25, Pin.IN)
 rst_pin = Pin(16, Pin.OUT)
-cs = Pin(9, Pin.OUT)
+cs = Pin(26, Pin.OUT)
 cs.off()
 sleep(1)
 cs.on()
 
 # Force logout button
-logout_btn = Pin(22, Pin.IN)
+logout_btn = Pin(19, Pin.IN)
 # SENSOR INIT
 while True:
     try:
@@ -55,7 +56,7 @@ while True:
 
 # Configure PN532 to communicate with MiFare cards
 pn532.SAM_configuration()
-
+beeper.play_melody("boot_ok")
 
 def check_connection() -> bool:
     N_TRIES = 1
@@ -185,9 +186,9 @@ def beep(qty: int = 1, long: bool = False) -> None:
         time_delay = 500
 
     for i in range(qty):
-        buzzer.value(1)
+        #buzzer.value(1)
         sleep_ms(time_delay)
-        buzzer.value(0)
+        #buzzer.value(0)
         if i != qty:
             sleep_ms(time_delay)
 
@@ -213,9 +214,8 @@ def unlock() -> None:
     Grant access routine
     """
     relay.value(0)
-    led_indication("green")
-    if BEEP_ON:
-        beep(2, False)
+    #led_indication("green")
+    beeper.play_melody("unlock")
 
 
 def lock() -> None:
@@ -224,8 +224,7 @@ def lock() -> None:
     """
     relay.value(1)
     led_indication("red")
-    if BEEP_ON:
-        beep(1, True)
+    beeper.play_melody("lock")
 
 
 def deny() -> None:
@@ -234,11 +233,7 @@ def deny() -> None:
     Sounds as X in Morse
     """
     led_indication("indigo")
-    if BEEP_ON:
-        beep(1, True)
-        beep(2, False)
-        beep(1, True)
-    sleep_ms(1000)
+    beeper.play_melody("reject")
     led_indication("red")
 
 
@@ -262,7 +257,8 @@ while True:
         print("Logout button was pressed")
     if key is None:
         continue
-    beep(1)
+    beeper.play_melody("got_key")
+    led_indication("yellow")
     hashed_key = hashlib.sha256(key).digest().hex()
     print("Check key: ", hashed_key)
     # Here we do quick ping to check if server is reachable to prevent long wait.
