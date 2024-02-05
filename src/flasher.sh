@@ -21,7 +21,7 @@ function create_config_file() {
   hostname="${HOST_HOSTNAME:-$(hostnamectl hostname)}"
 
   # Combine the hostname with ".local"
-  hostname_local="$hostname.local:5000"
+  hostname_local="$hostname.local:80"
 
   # Get Wi-Fi SSID from environment variable, otherwise use nmcli
   wifi_ssid="${HOST_WIFI_SSID:-$(nmcli -s device wifi show-password | grep "SSID"| cut -d" " -f2)}"
