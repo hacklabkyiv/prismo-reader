@@ -25,6 +25,9 @@ from config import (
 from uping import ping
 from platform import Beeper
 
+from machine import WDT
+wdt = WDT(timeout=5*60000) #5 min watchdog
+
 beeper = Beeper()
 
 # Pins
@@ -213,7 +216,7 @@ def unlock() -> None:
     """
     Grant access routine
     """
-    relay.value(0)
+    relay.value(1)
     #led_indication("green")
     beeper.play_melody("unlock")
 
@@ -222,7 +225,7 @@ def lock() -> None:
     """
     Deny access routine
     """
-    relay.value(1)
+    relay.value(0)
     led_indication("red")
     beeper.play_melody("lock")
 
@@ -252,9 +255,13 @@ if check_connection():
 access_keys_list = get_access_keys()
 
 while True:
+    wdt.feed()
     key = read_nfc(pn532, NFC_READ_TIMEOUT)
     if logout_btn.value() == 0:
-        print("Logout button was pressed")
+        print("Logout button was pressed, force logout")
+        if state is ReaderState.UNLOCKED:
+            lock()
+            state = ReaderState.LOCKED
     if key is None:
         continue
     beeper.play_melody("got_key")
