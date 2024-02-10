@@ -9,6 +9,8 @@
 
 
 DEVICE_ID="$1" # Took from arguments
+DEVICE_TYPE="$2" 
+
 PORT="/dev/ttyUSB0"
 ESPTOOL="esptool.py"
 FW_FILE="../fw/ESP32_GENERIC-20240105-v1.22.1.bin"
@@ -16,7 +18,7 @@ FW_FILE="../fw/ESP32_GENERIC-20240105-v1.22.1.bin"
 # Define functions
 function create_config_file() {
   local device_id="$1"
-
+  local device_type="$2"
   # Get hostname from environment variable, otherwise use hostnamectl
   hostname="${HOST_HOSTNAME:-$(hostnamectl hostname)}"
 
@@ -32,7 +34,7 @@ function create_config_file() {
   echo "[STATUS:Creating config file]"
 
   # Build configuration data
-  jo SSID=$wifi_ssid PSK=$wifi_password HOSTNAME=$hostname SERVER=$hostname_local DEVICE_ID=$device_id > config.json
+  jo SSID=$wifi_ssid PSK=$wifi_password HOSTNAME=$hostname SERVER=$hostname_local DEVICE_ID=$device_id DEVICE_TYPE=$device_type > config.json
   echo "[STATUS:CONFIG FILE CREATED]"
 }
 
@@ -107,7 +109,7 @@ function connect_and_wait_for_boot() {
 
 # Call functions
 echo "[PROGRESS:5]"
-create_config_file "$DEVICE_ID"
+create_config_file "$DEVICE_ID" "$DEVICE_TYPE"
 echo "[PROGRESS:10]"
 erase_flash "$PORT" "$ESPTOOL"
 echo "[PROGRESS:20]"
