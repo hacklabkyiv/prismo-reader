@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "USB4120-03-C_REVA")(type "Legacy")(uri "${KIPRJMOD}/usb_connector/USB4120-03-C_REVA.lib")(options "")(descr ""))
+)
