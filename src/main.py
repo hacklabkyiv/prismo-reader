@@ -15,11 +15,13 @@ import config
 import urequests as requests
 from config import (
     DEVICE_ID,
+    DEVICE_TYPE,
     HOST,
     NFC_READ_TIMEOUT,
     PING_TIMEOUT,
     ACCESS_KEYS_FILE,
     CHECK_TIME_SLEEP,
+    DOOR_AUTOLOCK_TIME
 )
 
 from uping import ping
@@ -277,6 +279,13 @@ while True:
         if check_connection():
             server_connected = True
             report_key_use(hashed_key, "unlock")
+        # If device type is door, we need to wait delay and lock door again
+        print(DEVICE_TYPE)
+        if DEVICE_TYPE == "door":
+            print("Door should be closed after delay")
+            sleep(DOOR_AUTOLOCK_TIME)
+            lock()
+            state = ReaderState.LOCKED
 
     elif (state is ReaderState.LOCKED) and (hashed_key not in access_keys_list):
         deny()
@@ -294,3 +303,4 @@ while True:
     if server_connected and update_access_keys():
         access_keys_list = get_access_keys()
     sleep(CHECK_TIME_SLEEP)
+

@@ -1,1 +1,1 @@
-{"SSID":"HackLab","PSK":"derparol","HOSTNAME":"artsin-MacBookPro","SERVER":"artsin-MacBookPro.local:5000","DEVICE_ID":"abc"}
+{"SSID":"HackLab","PSK":"derparol","HOSTNAME":"artsin-MacBookPro","SERVER":"artsin-MacBookPro.local:5000","DEVICE_ID":"abc", "DEVICE_TYPE":"machine"}
