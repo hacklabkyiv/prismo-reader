@@ -7562,7 +7562,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "134f36cd-af50-49a9-89ff-74d3e46e280d")
-		(property "Reference" "D3"
+		(property "Reference" "D1"
 			(at 45.72 39.532 0)
 			(effects
 				(font
@@ -7622,7 +7622,7 @@
 		(instances
 			(project "PRISMO-reader"
 				(path "/2a3560c2-ed74-4b68-8cf6-2c43628355c3"
-					(reference "D3")
+					(reference "D1")
 					(unit 1)
 				)
 			)
@@ -10019,7 +10019,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "522cdedd-461e-427d-baf9-43f0f81f3e02")
-		(property "Reference" "D1"
+		(property "Reference" "D4"
 			(at 125.73 39.532 0)
 			(effects
 				(font
@@ -10079,7 +10079,7 @@
 		(instances
 			(project "PRISMO-reader"
 				(path "/2a3560c2-ed74-4b68-8cf6-2c43628355c3"
-					(reference "D1")
+					(reference "D4")
 					(unit 1)
 				)
 			)
@@ -11385,7 +11385,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "9425fac7-aba4-4427-aedc-a63a4ad17197")
-		(property "Reference" "D4"
+		(property "Reference" "D2"
 			(at 68.58 39.532 0)
 			(effects
 				(font
@@ -11445,7 +11445,7 @@
 		(instances
 			(project "PRISMO-reader"
 				(path "/2a3560c2-ed74-4b68-8cf6-2c43628355c3"
-					(reference "D4")
+					(reference "D2")
 					(unit 1)
 				)
 			)
@@ -12976,7 +12976,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d7b21d0c-3243-4ef0-8d92-4c7c6c58e645")
-		(property "Reference" "D2"
+		(property "Reference" "D3"
 			(at 92.71 39.532 0)
 			(effects
 				(font
@@ -13036,7 +13036,7 @@
 		(instances
 			(project "PRISMO-reader"
 				(path "/2a3560c2-ed74-4b68-8cf6-2c43628355c3"
-					(reference "D2")
+					(reference "D3")
 					(unit 1)
 				)
 			)
