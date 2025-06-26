@@ -8,7 +8,7 @@ __credits__ = ["artsin, sashkoiv, paulftw, lazer_ninja, Vova Stelmashchuk"]
 
 
 import network
-from config import STASSID, STAPSK, LED_QTY
+from config import STASSID, STAPSK, LED_QTY, HOSTNAME
 from machine import Pin
 from time import sleep_ms, ticks_ms
 from neopixel import NeoPixel
@@ -20,6 +20,7 @@ l.write()
 
 wlan = network.WLAN(network.STA_IF)  # create station interface
 wlan.active(True)  # activate the interface
+wlan.config(dhcp_hostname=HOSTNAME)
 
 WIFI_CONNECT_TIMEOUT = 5000
 
@@ -28,7 +29,6 @@ print("WLAN network to connect is: ", STASSID)
 if not wlan.isconnected():
     print("Connecting to network...")
     wlan.connect(STASSID, STAPSK)  # connect to an AP
-    start_connection_time = ticks_ms()
     while not wlan.isconnected():
         r = 0
         g = 0
@@ -46,9 +46,6 @@ if not wlan.isconnected():
             l.fill((r, g, b))
             l.write()
             sleep_ms(1)
-        if ticks_ms() - start_connection_time > WIFI_CONNECT_TIMEOUT:
-            print("WiFi connection timeout")
-            break
 
 l.fill((0, 0, 0))
 l.write()

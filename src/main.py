@@ -3,7 +3,7 @@ __copyright__ = "Copyright 2023, KyivHacklab"
 __credits__ = ["artsin, sashkoiv, paulftw, lazer_ninja, Vova Stelmashchuk"]
 
 
-from machine import Pin, SPI
+from machine import Pin, SPI, WDT
 from time import sleep, sleep_ms
 
 import json
@@ -27,8 +27,8 @@ from config import (
 from uping import ping
 from platform import Beeper
 
-from machine import WDT
-wdt = WDT(timeout=5*60000) #5 min watchdog
+# WatchDog
+wdt = WDT(timeout=1*60_000) #5 min watchdog
 
 beeper = Beeper()
 
@@ -147,10 +147,10 @@ def report_key_use(key, operation) -> None:
     response = None
     json_payload = json.dumps({"operation": operation, "key": key})
     try:
-        response = requests.post(url, headers = {'content-type': 'application/json'}, data = json_payload).json()
+        response = requests.post(url, headers = {'content-type': 'application/json'}, data = json_payload)
         # You can handle the response here, for example, check for a successful status code.
-        if response.status_code == 200:
-            print("Request successful")
+        if response.status_code in [200, 201]:
+            print("Request successful:", response.text)
         else:
             print("Request failed with status code:", response.status_code)
     except Exception as e:
@@ -257,15 +257,24 @@ if check_connection():
 access_keys_list = get_access_keys()
 
 while True:
+    # Feed watchdog to prevent hanging
     wdt.feed()
+
+    # Try to read card
     key = read_nfc(pn532, NFC_READ_TIMEOUT)
+
+    # Check if button was pressed to force logout
     if logout_btn.value() == 0:
         print("Logout button was pressed, force logout")
         if state is ReaderState.UNLOCKED:
             lock()
             state = ReaderState.LOCKED
+
+    # If no card was found, we continue to the next iteration
     if key is None:
         continue
+
+
     beeper.play_melody("got_key")
     led_indication("yellow")
     hashed_key = hashlib.sha256(key).digest().hex()
