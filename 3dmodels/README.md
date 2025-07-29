@@ -1,7 +1,9 @@
-STL and F3d models for printing the shells for indoor and outdoor use
-Files:
+# STL and F3d models for printing the shells for indoor and outdoor use
 
-for indoor use
+# Files:
+
+# for indoor use
+
 internal_reader_shell_v3 - main model for indoor euipment readers, can be printed from any plastic
 logout_button - button extension small part
 transparent_insert - installed inside the main model, printed from any kind of transparent filament
@@ -9,7 +11,8 @@ reader_pcb_spacer - 14mm spacers installed between the reader pcb and pn532 rfid
 
 reader_internal_for_plasterboard - special model for the door reader to be installed inside a wall behind a 10mm plasterboard so the keys are scanned through the wall
 
-for outdoor use 
+# for outdoor use 
+
 outside_sensor_holder_cnc - a piece for installing pn532 board. designed to be filled with epoxy and used outdoors. better to be milled from non-metals so they do not interfere with the rfid scanning
 outside_sensor_holder_cnc_insert - 3d printed piece to better hold the pn532 inside the casing
 outside_sensor_holder_print - 3d printed part for pn532 installation. designed to be filled with epoxy. better print from UV-resistant filaments such as ASA or PC
