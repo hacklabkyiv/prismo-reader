@@ -19,6 +19,8 @@
 ***sensor_outside_reader_inside_horizontal*** - a box to hold the reader pcb to be mounted inside the room and connected to pn532 via wires. horizontal orientation to be mounted on the door close to the lock mechanism  
 ***sensor_outside_reader_inside_vertical*** - same but vertical orientation. better suited to be mounted on narrow door frames  
 
+# editable 3d models 
+
 three *.f3d Fusion 360 files that contain all mentioned models for modifications
 
 Have fun!
