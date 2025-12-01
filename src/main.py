@@ -28,7 +28,7 @@ from uping import ping
 from platform import Beeper
 
 # WatchDog
-wdt = WDT(timeout=1*60_000) #5 min watchdog
+wdt = WDT(timeout=1*60_000) #1 min watchdog
 
 beeper = Beeper()
 
@@ -37,7 +37,7 @@ relay = Pin(18, Pin.OUT, value=0)
 
 # SPI
 spi_dev = SPI(1, baudrate=1000000)
-irq_pin = Pin(25, Pin.IN)
+irq_pin = Pin(25, Pin.IN, Pin.PULL_UP)
 rst_pin = Pin(16, Pin.OUT)
 cs = Pin(26, Pin.OUT)
 cs.off()
@@ -219,7 +219,7 @@ def unlock() -> None:
     Grant access routine
     """
     relay.value(1)
-    #led_indication("green")
+    led_indication("green")
     beeper.play_melody("unlock")
 
 
@@ -259,6 +259,7 @@ access_keys_list = get_access_keys()
 while True:
     # Feed watchdog to prevent hanging
     wdt.feed()
+    external_watchdog.value(int(not external_watchdog.value()))
 
     # Try to read card
     key = read_nfc(pn532, NFC_READ_TIMEOUT)
@@ -272,6 +273,7 @@ while True:
 
     # If no card was found, we continue to the next iteration
     if key is None:
+        sleep(0.1)
         continue
 
 

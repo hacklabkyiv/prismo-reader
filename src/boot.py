@@ -17,12 +17,11 @@ led = Pin(4, Pin.OUT)
 l = NeoPixel(led, LED_QTY)
 l.fill((0, 0, 0))
 l.write()
+external_watchdog = Pin(22, Pin.OUT, value=0)
 
 wlan = network.WLAN(network.STA_IF)  # create station interface
 wlan.active(True)  # activate the interface
 wlan.config(dhcp_hostname=HOSTNAME)
-
-WIFI_CONNECT_TIMEOUT = 5000
 
 print("WLAN network to connect is: ", STASSID)
 
@@ -47,9 +46,11 @@ if not wlan.isconnected():
             l.write()
             sleep_ms(1)
 
+        external_watchdog.value(int(not external_watchdog.value()))
+
 l.fill((0, 0, 0))
 l.write()
-
+external_watchdog.value(0)
 if wlan.isconnected():
     print("Network config:", wlan.ifconfig())
     print("Device mac:", wlan.config("mac"))
