@@ -1,1 +1,8 @@
-{"SSID":"","PSK":"","HOSTNAME":"","SERVER":"","DEVICE_ID":"", "DEVICE_TYPE":""}
+{
+  "SSID":"",
+  "PSK":"",
+  "HOSTNAME":"",
+  "SERVER":"",
+  "DEVICE_ID":"",
+  "DEVICE_TYPE":""
+}
