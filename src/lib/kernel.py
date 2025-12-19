@@ -1,5 +1,3 @@
-
-
 class _Kernel:
 
     pixel = None

@@ -1,3 +1,4 @@
+import _thread
 import config
 import hashlib
 from time import sleep
@@ -11,27 +12,28 @@ class Application:
     __state = ReaderState.LOCKED
     def __init__(self, kernel: _Kernel):
         self.kernel = kernel
+        _thread.start_new_thread(self.background, (self.kernel.nfc,))
         self.run()
 
 
     def run(self):
-        self.lock()
+        self._lock()
 
         NetworkManager.update_access_keys()
 
         while True:
-            self.feed_watchdog()
+            self._feed_watchdog()
 
             # Check if button was pressed to force logout
             if self.kernel.logout_btn.value() == 0:
                 print("Logout button was pressed, force logout")
-                if not self.is_locked():
-                    self.lock()
+                if not self._is_locked():
+                    self._lock()
                     sleep(0.1)
                     continue
 
             # Try to read card
-            key = self.read_nfc(self.kernel.nfc, config.NFC_READ_TIMEOUT)
+            key = self._read_nfc(self.kernel.nfc, config.NFC_READ_TIMEOUT)
 
             # If no card was found, we continue to the next iteration
             if key is None:
@@ -39,38 +41,48 @@ class Application:
                 continue
 
             self.kernel.beeper.play_melody("got_key")
-            self.led_indication("yellow")
+            self._led_indication("yellow")
             hashed_key = hashlib.sha256(key).digest().hex()
             print("Check key: ", hashed_key)
             # Here we do quick ping to check if server is reachable to prevent long wait.
             # This is because timeouts are not supported in requests mode.
-            if self.is_locked() and KeysManager.has_access(hashed_key):
-                self.unlock()
+            if self._is_locked() and KeysManager.has_access(hashed_key):
+                self._unlock()
                 NetworkManager.report_key_use(hashed_key, "unlock")
                 # If device type is door, we need to wait delay and lock door again
                 if config.DEVICE_TYPE == "door":
                     print("Door should be closed after delay")
                     sleep(config.DOOR_AUTOLOCK_TIME)
-                    self.lock()
+                    self._lock()
 
-            elif self.is_locked() and not KeysManager.has_access(hashed_key):
-                self.deny()
+            elif self._is_locked() and not KeysManager.has_access(hashed_key):
+                self._deny()
                 NetworkManager.report_key_use(hashed_key, "deny_access")
 
-            elif not self.is_locked():
-                self.lock()
+            elif not self._is_locked():
+                self._lock()
                 NetworkManager.report_key_use(hashed_key, "lock")
             # We update access key list every time when any key is detected.
             NetworkManager.update_access_keys()
             sleep(config.CHECK_TIME_SLEEP)
 
+    @staticmethod
+    def background(nfc_reader):
+        while True:
+            sleep(10)
+            try:
+                nfc_reader.get_firmware_version()
+            except RuntimeError:
+                print("PN532 is not responding, force reset")
+                from lib.PN532 import force_reset_reader
+                force_reset_reader(nfc_reader)
 
-    def feed_watchdog(self):
+    def _feed_watchdog(self):
         # Feed watchdog to prevent hanging
         self.kernel.wdt.feed()
         self.kernel.external_watchdog.value(int(not self.kernel.external_watchdog.value()))
 
-    def read_nfc(self, dev: PN532, timeout: int = 5000) -> bytearray | None:
+    def _read_nfc(self, dev: PN532, timeout: int = 5000) -> bytearray | None:
         """
         Reads the tag and returns the code of the tag.
         Args:
@@ -91,7 +103,7 @@ class Application:
 
         return uid
 
-    def led_indication(self, color: str) -> None:
+    def _led_indication(self, color: str) -> None:
         """
         Provides light indication of the event or status.
         Args:
@@ -106,33 +118,33 @@ class Application:
             print(config.COLORS.keys())
 
 
-    def unlock(self) -> None:
+    def _unlock(self) -> None:
         """
         Grant access routine
         """
         self.__state = ReaderState.UNLOCKED
         self.kernel.relay.value(1)
-        self.led_indication("green")
+        self._led_indication("green")
         self.kernel.beeper.play_melody("unlock")
 
-    def lock(self) -> None:
+    def _lock(self) -> None:
         """
         Deny access routine
         """
         self.__state = ReaderState.LOCKED
         self.kernel.relay.value(0)
-        self.led_indication("red")
+        self._led_indication("red")
         self.kernel.beeper.play_melody("lock")
 
-    def deny(self) -> None:
+    def _deny(self) -> None:
         """
         Operationn denied. Indicate the issue.
         Sounds as X in Morse
         """
-        self.led_indication("indigo")
+        self._led_indication("indigo")
         self.kernel.beeper.play_melody("reject")
-        self.led_indication("red")
+        self._led_indication("red")
 
-    def is_locked(self) -> bool:
+    def _is_locked(self) -> bool:
         return self.__state == ReaderState.LOCKED
 

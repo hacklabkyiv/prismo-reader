@@ -20,7 +20,7 @@ class _KeysManager:
         try:
             with open(config.ACCESS_KEYS_FILE, "r") as file:
                 content = file.read()
-                print("Read file ok:", content)
+                # print("Read file ok:", content)
                 json_data = json.loads(content)
                 keys = json_data["keys"]
                 # print("Allowed keys: ", json_data)
