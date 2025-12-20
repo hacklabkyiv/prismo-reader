@@ -26,7 +26,8 @@ class Beeper:
             "lock": [(self.notes["C7"], 0.3)],
             "unlock": [(self.notes["D8"], 0.3)],
             "reject": [(self.notes["C7"], 0.1), (self.notes["C7"], 0.1), (self.notes["C7"], 0.1)],
-            "boot_ok": [(self.notes["E8"], 0.1), (self.notes["B7"], 0.1), (self.notes["D8"], 0.2), (self.notes["C8"], 0.2), (self.notes["A7"], 0.4)]
+            "boot_ok": [(self.notes["E8"], 0.1), (self.notes["B7"], 0.1), (self.notes["D8"], 0.2), (self.notes["C8"], 0.2), (self.notes["A7"], 0.4)],
+            "error": [ (self.notes["C8"], 0.3),(self.notes["C7"], 1),(self.notes["C8"], 0.3)]
         }
 
     def play(self, duration):

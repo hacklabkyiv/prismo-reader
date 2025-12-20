@@ -27,3 +27,5 @@ fp-info-cache
 
 # OS files
 .DS_Store
+
+.idea

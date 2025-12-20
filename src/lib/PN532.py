@@ -16,7 +16,7 @@ Micropython PN532 NFC/RFID control library (SPI)
 https://github.com/Carglglz/NFC_PN532_SPI
 """
 
-import time
+import time, _thread
 from machine import Pin
 from micropython import const
 
@@ -72,7 +72,6 @@ _SPI_DATAWRITE = const(0x01)
 _SPI_DATAREAD = const(0x03)
 _SPI_READY = const(0x01)
 
-
 def _reset(pin):
     """Perform a hardware reset toggle"""
     pin.init(Pin.OUT)
@@ -107,10 +106,12 @@ class PN532:
 
     def __init__(self, spi, cs_pin, irq=None, reset=None, debug=False):
         """Create an instance of the PN532 class using SPI"""
+        self.__lock = _thread.allocate_lock()
         self.debug = debug
         self._irq = irq
         self.CSB = cs_pin
         self._spi = spi
+        self._reset = reset
         self.CSB.on()
         if reset:
             if debug:
@@ -261,38 +262,39 @@ class PN532:
         for a response and return a bytearray of response bytes, or None if no
         response is available within the timeout.
         """
-        # Build frame data with command and parameters.
-        data = bytearray(2+len(params))
-        data[0] = _HOSTTOPN532
-        data[1] = command & 0xFF
-        for i, val in enumerate(params):
-            data[2+i] = val
-        # Send frame and wait for response.
-        try:
-            self._write_frame(data)
-        except OSError:
-            self._wakeup()
-            return None
-        if not self._wait_ready(timeout):
+        with self.__lock:
+            # Build frame data with command     and parameters.
+            data = bytearray(2+len(params))
+            data[0] = _HOSTTOPN532
+            data[1] = command & 0xFF
+            for i, val in enumerate(params):
+                data[2+i] = val
+            # Send frame and wait for response.
+            try:
+                self._write_frame(data)
+            except OSError:
+                self._wakeup()
+                return None
+            if not self._wait_ready(timeout):
+                if(self.debug):
+                    print('DEBUG: _wait_ready timed out waiting for ACK')
+                return None
+            # Verify ACK response and wait to be ready for function response.
+            if not _ACK == self._read_data(len(_ACK)):
+                raise RuntimeError('Did not receive expected ACK from PN532!')
+            if not self._wait_ready(timeout):
+                if(self.debug):
+                    print('DEBUG: _wait_ready timed out waiting for response')
+                return None
+            # Read response bytes.
+            response = self._read_frame(response_length+2)
             if(self.debug):
-                print('DEBUG: _wait_ready timed out waiting for ACK')
-            return None
-        # Verify ACK response and wait to be ready for function response.
-        if not _ACK == self._read_data(len(_ACK)):
-            raise RuntimeError('Did not receive expected ACK from PN532!')
-        if not self._wait_ready(timeout):
-            if(self.debug):
-                print('DEBUG: _wait_ready timed out waiting for response')
-            return None
-        # Read response bytes.
-        response = self._read_frame(response_length+2)
-        if(self.debug):
-            print('DEBUG: call_function response:', [hex(i) for i in response])
-        # Check that response is for the called function.
-        if not (response[0] == _PN532TOHOST and response[1] == (command+1)):
-            raise RuntimeError('Received unexpected command response!')
-        # Return response data.
-        return response[2:]
+                print('DEBUG: call_function response:', [hex(i) for i in response])
+            # Check that response is for the called function.
+            if not (response[0] == _PN532TOHOST and response[1] == (command+1)):
+                raise RuntimeError('Received unexpected command response!')
+            # Return response data.
+            return response[2:]
 
     def get_firmware_version(self):
         """Call PN532 GetFirmwareVersion function and return a tuple with the IC,
@@ -406,3 +408,8 @@ class PN532:
             _COMMAND_INDATAEXCHANGE, params=params, response_length=1
         )
         return response[0] == 0x00
+
+
+def force_reset_reader(cls: PN532):
+    """Force a hardware reset"""
+    _reset(cls._reset)
