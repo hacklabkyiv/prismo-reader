@@ -69,7 +69,7 @@ function upload_source_code_and_config() {
   local port="$1"
 
   echo "[STATUS:Uploading source code and config]"
-  if rshell -p "$port" "mkdir /pyboard/lib; mkdir /pyboard/lib/network; cp *.py /pyboard/; cp config.json /pyboard/; cp lib/*.py /pyboard/lib; cp lib/network/*.py /pyboard/lib/network" then
+  if rshell -p "$port" "mkdir /pyboard/lib; mkdir /pyboard/lib/network; cp *.py /pyboard/; cp config.json /pyboard/; cp lib/*.py /pyboard/lib; cp lib/network/*.py /pyboard/lib/network"; then
     echo "[STATUS:UPLOAD OK]"
   else
     echo "[STATUS: UPLOAD FAILED]"
