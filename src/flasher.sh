@@ -12,7 +12,7 @@ DEVICE_ID="$1" # Took from arguments
 DEVICE_TYPE="$2" 
 
 PORT="/dev/ttyUSB0"
-ESPTOOL="esptool.py"
+ESPTOOL="esptool"
 FW_FILE="../fw/ESP32_GENERIC-20240105-v1.22.1.bin"
 
 # Define functions
@@ -69,7 +69,7 @@ function upload_source_code_and_config() {
   local port="$1"
 
   echo "[STATUS:Uploading source code and config]"
-  if rshell -p "$port" "cp *.py /pyboard/; cp config.json /pyboard/"; then
+  if rshell -p "$port" "mkdir /pyboard/lib; mkdir /pyboard/lib/network; cp *.py /pyboard/; cp config.json /pyboard/; cp lib/*.py /pyboard/lib; cp lib/network/*.py /pyboard/lib/network"; then
     echo "[STATUS:UPLOAD OK]"
   else
     echo "[STATUS: UPLOAD FAILED]"
